@@ -597,6 +597,23 @@ export default function App() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{t('productImage')}</DialogTitle>
+          </DialogHeader>
+          {selectedImage && (
+            <div className="flex justify-center">
+              <img 
+                src={selectedImage} 
+                alt="Product" 
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <footer className="bg-gray-900 text-white py-12 mt-20">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
