@@ -24,7 +24,7 @@ async function initializeProducts() {
   const products = database.collection('products')
   
   const count = await products.countDocuments()
-  if (count > 0) return
+  if (count > 0) return // Vérifier si produits existent
   
   const demoProducts = [
     {
