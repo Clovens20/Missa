@@ -24,6 +24,8 @@ export default function App() {
   const [blogPosts, setBlogPosts] = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [customizeModalOpen, setCustomizeModalOpen] = useState(false)
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
   const [customText, setCustomText] = useState('')
   const [customImages, setCustomImages] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all')
