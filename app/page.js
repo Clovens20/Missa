@@ -640,11 +640,16 @@ export default function App() {
   )
 }
 
-function ProductCard({ product, onAddToCart, onCustomize, onToggleFavorite, isFavorite, language, t }) {
+function ProductCard({ product, onAddToCart, onCustomize, onToggleFavorite, isFavorite, onImageClick, language, t }) {
   return (
     <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300">
       <div className="relative overflow-hidden">
-        <img src={product.images[0]} alt={language === 'fr' ? product.name_fr : product.name_en} className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300" />
+        <img 
+          src={product.images[0]} 
+          alt={language === 'fr' ? product.name_fr : product.name_en} 
+          className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 cursor-pointer" 
+          onClick={() => onImageClick && onImageClick(product.images[0])}
+        />
         {product.isCustomizable && <Badge className="absolute top-3 right-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white">Personnalisable</Badge>}
         <button onClick={() => onToggleFavorite(product)} className="absolute top-3 left-3 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
           <Heart className={`w-5 h-5 ${isFavorite ? 'fill-pink-500 text-pink-500' : 'text-gray-600'}`} />
