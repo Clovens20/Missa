@@ -231,6 +231,7 @@ export default function App() {
             <nav className="flex flex-col p-4 gap-2">
               <button onClick={() => { setCurrentPage('home'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('home')}</button>
               <button onClick={() => { setCurrentPage('products'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('products')}</button>
+              <a href="/personnaliser" className="text-left py-2 px-4 hover:bg-gray-100 rounded">✨ Personnaliser</a>
               <button onClick={() => { setCurrentPage('blog'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('blog')}</button>
               <button onClick={() => { setCurrentPage('favorites'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('favorites')}</button>
             </nav>
