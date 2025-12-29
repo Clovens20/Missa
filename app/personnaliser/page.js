@@ -286,22 +286,65 @@ export default function PersonnalisationPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="color" className="text-base font-semibold mb-2 block">
+                  <Label htmlFor="color" className="text-base font-semibold mb-3 block">
                     Couleur du texte
                   </Label>
-                  <div className="flex gap-3 items-center">
-                    <input
-                      type="color"
-                      id="color"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer"
-                    />
-                    <Input
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      className="flex-1 font-mono uppercase"
-                    />
+                  
+                  {/* Palette de couleurs prédéfinies */}
+                  <div className="grid grid-cols-9 gap-2 mb-4">
+                    {[
+                      // Rose
+                      '#EC4899', '#F472B6', '#FB7185',
+                      // Violet
+                      '#A855F7', '#C084FC', '#8B5CF6',
+                      // Bleu
+                      '#3B82F6', '#60A5FA', '#06B6D4',
+                      // Vert
+                      '#10B981', '#34D399', '#22C55E',
+                      // Jaune/Or
+                      '#FBBF24', '#FCD34D', '#F59E0B',
+                      // Rouge
+                      '#EF4444', '#F87171', '#DC2626',
+                      // Orange
+                      '#F97316', '#FB923C', '#EA580C',
+                      // Noir/Gris
+                      '#000000', '#1F2937', '#374151',
+                      // Blanc/Clair
+                      '#FFFFFF', '#F9FAFB', '#F3F4F6'
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setTextColor(color)}
+                        className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 ${
+                          textColor.toUpperCase() === color.toUpperCase()
+                            ? 'border-pink-500 ring-4 ring-pink-200 scale-110'
+                            : 'border-gray-300 hover:border-gray-400'
+                        } ${color === '#FFFFFF' || color === '#F9FAFB' || color === '#F3F4F6' ? 'border-gray-400' : ''}`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Color picker personnalisé */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600 font-medium">Ou choisissez une couleur personnalisée :</p>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="color"
+                        id="color"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-pink-500 transition"
+                      />
+                      <Input
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="flex-1 font-mono uppercase"
+                        placeholder="#EC4899"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
