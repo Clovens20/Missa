@@ -1,8 +1,33 @@
 # 🌸 Missa Créations - E-commerce de Créations en Résine
 
-Site e-commerce professionnel pour **Missa Créations**, une boutique de produits en résine personnalisés faits main.
+Site e-commerce professionnel COMPLET pour **Missa Créations**, une boutique de produits en résine personnalisés faits main.
 
-## ✨ Fonctionnalités Principales
+## 🚀 Phase 2 TERMINÉE ! Nouvelles Fonctionnalités
+
+### 🌍 Multilingue FR/EN Complet
+- Système de traduction avec Context API
+- Bouton changement de langue dans header  
+- Toutes les pages traduites
+- Préférence sauvegardée
+
+### ❤️ Système de Favoris
+- Ajout/retrait avec bouton cœur
+- Page dédiée /favorites
+- Badge compteur dans header
+- Persistance localStorage
+
+### 📝 Blog Complet
+- Page /blog avec articles
+- 3 articles demo (Tutoriels, Inspiration, Nouveautés)
+- Filtres par catégorie
+- Support multilingue
+
+### 🎟️ Codes Promo
+- Validation codes dans checkout
+- 3 codes demo actifs: MISSA10 (10%), WELCOME (15%), SAVE20 (20$)
+- Calcul automatique réduction
+
+## ✨ Fonctionnalités Principales (Phase 1)
 
 ### 🛍️ Frontend Client
 - **Page d'Accueil** : Hero section élégante avec produits vedettes
