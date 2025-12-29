@@ -342,7 +342,7 @@ export default function App() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {favorites.map(product => (
-                <ProductCard key={product._id} product={product} onAddToCart={addToCart} onCustomize={handleCustomize} onToggleFavorite={toggleFavorite} isFavorite={true} language={language} t={t} />
+                <ProductCard key={product._id} product={product} onAddToCart={addToCart} onCustomize={handleCustomize} onToggleFavorite={toggleFavorite} isFavorite={true} onImageClick={(img) => { setSelectedImage(img); setImageModalOpen(true) }} language={language} t={t} />
               ))}
             </div>
           )}
