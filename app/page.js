@@ -192,6 +192,7 @@ export default function App() {
             <nav className="hidden md:flex items-center gap-8">
               <button onClick={() => setCurrentPage('home')} className="text-gray-700 hover:text-pink-500 font-medium transition">{t('home')}</button>
               <button onClick={() => setCurrentPage('products')} className="text-gray-700 hover:text-pink-500 font-medium transition">{t('products')}</button>
+              <a href="/personnaliser" className="text-gray-700 hover:text-pink-500 font-medium transition">✨ Personnaliser</a>
               <button onClick={() => setCurrentPage('blog')} className="text-gray-700 hover:text-pink-500 font-medium transition">{t('blog')}</button>
               <button className="text-gray-700 hover:text-pink-500 font-medium transition">{t('contact')}</button>
             </nav>
