@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Resend désactivé - à réactiver quand vous aurez un compte Resend
+// import { Resend } from 'resend'
+// const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Fonction pour générer le template HTML de l'email de confirmation
 function generateOrderConfirmationEmail(order, language = 'fr') {
@@ -206,39 +207,21 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    if (!process.env.RESEND_API_KEY) {
-      console.error('RESEND_API_KEY is not configured')
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Email service not configured' 
-      }, { status: 500 })
-    }
-
+    // Email désactivé temporairement - Resend non configuré
+    // TODO: Réactiver quand vous aurez un compte Resend
+    console.log('📧 Email de confirmation désactivé (Resend non configuré)')
+    console.log('Order:', order.orderNumber, 'Email:', order.customer.email)
+    
+    // Générer le HTML pour référence (peut être utilisé plus tard)
     const isFrench = language === 'fr'
     const emailHtml = generateOrderConfirmationEmail(order, language)
-
-    // Utiliser le domaine par défaut de Resend ou votre domaine vérifié
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
     
-    const { data, error } = await resend.emails.send({
-      from: `Missa Créations <${fromEmail}>`,
-      to: order.customer.email,
-      subject: isFrench 
-        ? `✨ Confirmation de commande ${order.orderNumber} - Missa Créations` 
-        : `✨ Order Confirmation ${order.orderNumber} - Missa Creations`,
-      html: emailHtml,
-      replyTo: 'support@missacreations.com'
-    })
-
-    if (error) {
-      console.error('Resend error:', error)
-      throw error
-    }
-
+    // Retourner un succès même sans envoyer l'email
+    // L'email sera envoyé manuellement ou via un autre service plus tard
     return NextResponse.json({ 
       success: true, 
-      messageId: data?.id,
-      message: 'Email sent successfully' 
+      message: 'Order confirmed (email service not configured - will be sent manually)',
+      note: 'Email HTML generated but not sent. Configure RESEND_API_KEY to enable email sending.'
     })
   } catch (error) {
     console.error('Email sending error:', error)

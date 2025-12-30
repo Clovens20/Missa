@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
-import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Resend désactivé - à réactiver quand vous aurez un compte Resend
+// import { Resend } from 'resend'
+// const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Fonction pour générer un code promo unique
 function generatePromoCode(email) {
@@ -399,33 +400,15 @@ export async function POST(request) {
       }
     }
 
-    // Envoyer l'email de bienvenue
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-        const emailHtml = generateWelcomeEmail(name || 'Cher client', email, language, promoCode || 'BIENVENUE10')
-        
-        const { data: emailData, error: emailError } = await resend.emails.send({
-          from: `Missa Créations <${fromEmail}>`,
-          to: email,
-          subject: language === 'fr' 
-            ? `✨ Bienvenue ${name ? name.split(' ')[0] : ''} chez Missa Créations ! ✨` 
-            : `✨ Welcome ${name ? name.split(' ')[0] : ''} to Missa Creations! ✨`,
-          html: emailHtml,
-          replyTo: 'support@missacreations.com'
-        })
-
-        if (emailError) {
-          console.error('Resend error:', emailError)
-          // Ne pas faire échouer l'abonnement si l'email échoue
-        } else {
-          console.log('✅ Welcome email sent successfully to:', email)
-        }
-      } catch (emailError) {
-        console.error('Error sending welcome email:', emailError)
-        // Ne pas faire échouer l'abonnement si l'email échoue
-      }
-    }
+    // Email de bienvenue désactivé temporairement - Resend non configuré
+    // TODO: Réactiver quand vous aurez un compte Resend
+    console.log('📧 Email de bienvenue désactivé (Resend non configuré)')
+    console.log('Nouvel abonné:', email, 'Code promo:', promoCode)
+    
+    // Générer le HTML pour référence (peut être utilisé plus tard)
+    // const emailHtml = generateWelcomeEmail(name || 'Cher client', email, language, promoCode || 'BIENVENUE10')
+    
+    // L'email sera envoyé manuellement ou via un autre service plus tard
 
     return NextResponse.json({ 
       success: true, 
