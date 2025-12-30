@@ -284,13 +284,13 @@ export default function App() {
   const toggleFavorite = useCallback((product) => {
     setFavorites(prev => {
       const isFav = prev.some(fav => fav._id === product._id)
-      if (isFav) {
-        toast({ title: t('removedFromFavorites') })
+    if (isFav) {
+      toast({ title: t('removedFromFavorites') })
         return prev.filter(fav => fav._id !== product._id)
-      } else {
-        toast({ title: t('addedToFavorites') })
+    } else {
+      toast({ title: t('addedToFavorites') })
         return [...prev, product]
-      }
+    }
     })
   }, [t])
 
@@ -502,9 +502,9 @@ export default function App() {
   // Filtrer les produits avec useMemo pour éviter les recalculs inutiles
   const filteredProducts = useMemo(() => {
     return products
-      .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
+    .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
       .filter(p => (language === 'fr' ? p.name_fr : p.name_en).toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
-      .sort((a, b) => sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : 0)
+    .sort((a, b) => sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : 0)
   }, [products, selectedCategory, debouncedSearchQuery, sortBy, language])
 
   // Grouper les produits par catégorie avec useMemo
@@ -562,17 +562,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-50 bg-white shadow-md">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-              <LogoComponent />
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Missa Créations</h1>
-                <p className="text-xs text-gray-500">Personnalisées et Artisanales</p>
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
+              <LogoComponent size="small" />
+              <div className="hidden xs:block">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Missa Créations</h1>
+                <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">Personnalisées et Artisanales</p>
               </div>
             </div>
 
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
               <button onClick={() => setCurrentPage('home')} className={`font-semibold capitalize transition-all ${currentPage === 'home' ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-600 hover:text-pink-500'}`}>{t('home')}</button>
               <button onClick={() => setCurrentPage('products')} className={`font-semibold capitalize transition-all ${currentPage === 'products' ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-600 hover:text-pink-500'}`}>{t('products')}</button>
               <button onClick={() => setCurrentPage('customize')} className={`font-semibold capitalize transition-all ${currentPage === 'customize' ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-600 hover:text-pink-500'}`}>✨ {language === 'fr' ? 'Personnaliser' : 'Customize'}</button>
@@ -580,45 +580,52 @@ export default function App() {
               <button onClick={() => setContactModalOpen(true)} className={`font-semibold capitalize transition-all ${contactModalOpen ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-600 hover:text-pink-500'}`}>{t('contact')}</button>
             </nav>
 
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSearchModalOpen(true)} className="p-2 hover:bg-pink-50 rounded-full transition">
-                <Search className="w-5 h-5 text-gray-600 hover:text-pink-500 transition" />
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              <button onClick={() => setSearchModalOpen(true)} className="p-1.5 sm:p-2 hover:bg-pink-50 rounded-full transition">
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 hover:text-pink-500 transition" />
               </button>
               
-              <div className="relative cursor-pointer" onClick={() => setCurrentPage('favorites')}>
-                <Heart className={`w-5 h-5 cursor-pointer transition ${favorites.length > 0 ? 'fill-pink-500 text-pink-500' : 'text-gray-600 hover:text-pink-500'}`} />
+              <div className="relative cursor-pointer hidden sm:block" onClick={() => setCurrentPage('favorites')}>
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${favorites.length > 0 ? 'fill-pink-500 text-pink-500' : 'text-gray-600 hover:text-pink-500'}`} />
                 {favorites.length > 0 && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs rounded-full flex items-center justify-center font-bold">{favorites.length}</span>
+                  <span className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold">{favorites.length}</span>
                 )}
               </div>
 
-              <button onClick={toggleLanguage} className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-pink-500 transition">
-                <Globe className="w-5 h-5" />
-                <span className="uppercase">{language}</span>
+              <button onClick={toggleLanguage} className="hidden md:flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-pink-500 transition">
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="uppercase text-xs sm:text-sm">{language}</span>
               </button>
 
               <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
-                <ShoppingCart className="w-6 h-6 text-gray-600 hover:text-pink-500 transition" />
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 hover:text-pink-500 transition" />
                 {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs rounded-full flex items-center justify-center font-bold">{cart.length}</span>
+                  <span className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-bold">{cart.length}</span>
                 )}
               </div>
               
-              <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <button className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
               </button>
             </div>
           </div>
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden border-t">
-            <nav className="flex flex-col p-4 gap-2">
-              <button onClick={() => { setCurrentPage('home'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('home')}</button>
-              <button onClick={() => { setCurrentPage('products'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('products')}</button>
-              <button onClick={() => { setCurrentPage('customize'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">✨ {language === 'fr' ? 'Personnaliser' : 'Customize'}</button>
-              <button onClick={() => { setCurrentPage('blog'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('blog')}</button>
-              <button onClick={() => { setCurrentPage('favorites'); setMobileMenuOpen(false) }} className="text-left py-2 px-4 hover:bg-gray-100 rounded">{t('favorites')}</button>
+          <div className="lg:hidden border-t">
+            <nav className="flex flex-col p-2 sm:p-4 gap-1 sm:gap-2">
+              <button onClick={() => { setCurrentPage('home'); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">{t('home')}</button>
+              <button onClick={() => { setCurrentPage('products'); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">{t('products')}</button>
+              <button onClick={() => { setCurrentPage('customize'); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">✨ {language === 'fr' ? 'Personnaliser' : 'Customize'}</button>
+              <button onClick={() => { setCurrentPage('blog'); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">{t('blog')}</button>
+              <button onClick={() => { setCurrentPage('favorites'); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">{t('favorites')}</button>
+              <button onClick={() => { setContactModalOpen(true); setMobileMenuOpen(false) }} className="text-left py-2 px-3 sm:px-4 hover:bg-gray-100 rounded text-sm sm:text-base">{t('contact')}</button>
+              <div className="flex items-center gap-2 px-3 sm:px-4 py-2 border-t mt-2">
+                <button onClick={toggleLanguage} className="flex items-center gap-2 text-sm text-gray-600 hover:text-pink-500">
+                  <Globe className="w-4 h-4" />
+                  <span className="uppercase">{language}</span>
+                </button>
+              </div>
             </nav>
           </div>
         )}
@@ -635,17 +642,17 @@ export default function App() {
               <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
             </div>
 
-            <div className="relative max-w-7xl mx-auto px-4 py-20 text-center z-10">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 text-center z-10">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg mb-8 animate-fade-in">
-                <Sparkles className="w-4 h-4 text-pink-500" />
-                <span className="text-sm font-semibold text-gray-700">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg mb-6 sm:mb-8 animate-fade-in">
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-pink-500" />
+                <span className="text-xs sm:text-sm font-semibold text-gray-700">
                   {language === 'fr' ? '✨ Créations 100% Artisanales' : '✨ 100% Handcrafted Creations'}
                 </span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-7xl md:text-8xl font-extrabold mb-6 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight animate-slide-up">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold mb-4 sm:mb-6 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight animate-slide-up px-2">
                 {language === 'fr' ? (
                   <>
                     Créations Artisanales<br />
@@ -660,26 +667,26 @@ export default function App() {
               </h1>
 
               {/* Subheadline */}
-              <p className="text-2xl md:text-3xl text-gray-700 mb-4 max-w-3xl mx-auto font-medium animate-slide-up-delay">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-gray-700 mb-3 sm:mb-4 max-w-3xl mx-auto font-medium animate-slide-up-delay px-2">
                 {language === 'fr' 
                   ? 'Personnalisez chaque détail : couleur, paillettes, fleurs séchées, initiales'
                   : 'Customize every detail: color, glitter, dried flowers, initials'}
               </p>
-              <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto animate-slide-up-delay-2">
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto animate-slide-up-delay-2 px-2">
                 {language === 'fr' 
                   ? 'Des créations en résine faites main avec passion, pour des souvenirs qui durent toute une vie'
                   : 'Handcrafted resin creations with passion, for memories that last a lifetime'}
               </p>
 
               {/* CTA Buttons - Multiple and Active */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-fade-in-delay">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 animate-fade-in-delay px-2">
                 <Button 
                   onClick={() => setCurrentPage('products')}
                   size="lg" 
-                  className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white text-xl px-12 py-6 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300 font-bold animate-pulse-slow relative overflow-hidden group"
+                  className="w-full sm:w-auto bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white text-base sm:text-lg md:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-5 md:py-6 rounded-full shadow-2xl transform hover:scale-105 sm:hover:scale-110 transition-all duration-300 font-bold animate-pulse-slow relative overflow-hidden group"
                 >
-                  <span className="relative z-10 flex items-center gap-3">
-                    <ShoppingCart className="w-6 h-6" />
+                  <span className="relative z-10 flex items-center justify-center gap-2 sm:gap-3">
+                    <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                     {language === 'fr' ? '🛍️ Explorer la Boutique' : '🛍️ Explore Shop'}
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -689,26 +696,26 @@ export default function App() {
                   onClick={() => setCurrentPage('customize')}
                   size="lg" 
                   variant="outline"
-                  className="border-3 border-pink-500 text-pink-600 hover:bg-pink-50 text-xl px-12 py-6 rounded-full shadow-xl transform hover:scale-110 transition-all duration-300 font-bold bg-white/80 backdrop-blur-sm"
+                  className="w-full sm:w-auto border-2 sm:border-3 border-pink-500 text-pink-600 hover:bg-pink-50 text-base sm:text-lg md:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-5 md:py-6 rounded-full shadow-xl transform hover:scale-105 sm:hover:scale-110 transition-all duration-300 font-bold bg-white/80 backdrop-blur-sm"
                 >
-                  <Sparkles className="w-6 h-6 mr-2" />
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                   {language === 'fr' ? '✨ Personnaliser Maintenant' : '✨ Customize Now'}
                 </Button>
               </div>
 
               {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto animate-fade-in-delay-2">
+              <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-3xl mx-auto animate-fade-in-delay-2 px-2">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-pink-600 mb-2">{products.length}+</div>
-                  <div className="text-sm text-gray-600">{language === 'fr' ? 'Créations Uniques' : 'Unique Creations'}</div>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-pink-600 mb-1 sm:mb-2">{products.length}+</div>
+                  <div className="text-xs sm:text-sm text-gray-600">{language === 'fr' ? 'Créations Uniques' : 'Unique Creations'}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-purple-600 mb-2">100%</div>
-                  <div className="text-sm text-gray-600">{language === 'fr' ? 'Fait Main' : 'Handmade'}</div>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-600 mb-1 sm:mb-2">100%</div>
+                  <div className="text-xs sm:text-sm text-gray-600">{language === 'fr' ? 'Fait Main' : 'Handmade'}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-2">5★</div>
-                  <div className="text-sm text-gray-600">{language === 'fr' ? 'Satisfaction' : 'Satisfaction'}</div>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-1 sm:mb-2">5★</div>
+                  <div className="text-xs sm:text-sm text-gray-600">{language === 'fr' ? 'Satisfaction' : 'Satisfaction'}</div>
                 </div>
               </div>
             </div>
@@ -722,17 +729,17 @@ export default function App() {
           </section>
 
           {/* Featured Products Section - Enhanced */}
-          <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-pink-100 rounded-full mb-4">
-                  <Star className="w-5 h-5 text-pink-500 fill-pink-500" />
-                  <span className="text-sm font-semibold text-pink-700">{language === 'fr' ? 'Produits Populaires' : 'Popular Products'}</span>
+          <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-b from-white to-gray-50">
+            <div className="container mx-auto px-3 sm:px-4">
+              <div className="text-center mb-10 sm:mb-12 md:mb-16">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-pink-100 rounded-full mb-3 sm:mb-4">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 fill-pink-500" />
+                  <span className="text-xs sm:text-sm font-semibold text-pink-700">{language === 'fr' ? 'Produits Populaires' : 'Popular Products'}</span>
                 </div>
-                <h3 className="text-5xl font-bold mb-4 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent px-2">
                   {language === 'fr' ? '✨ Nos Créations Vedettes' : '✨ Our Featured Creations'}
                 </h3>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-2">
                   {language === 'fr' 
                     ? 'Découvrez nos créations les plus appréciées, toutes personnalisables selon vos envies'
                     : 'Discover our most loved creations, all customizable to your desires'}
@@ -781,23 +788,23 @@ export default function App() {
           </section>
 
           {/* Why Choose Us - Enhanced */}
-          <section className="py-20 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 text-white relative overflow-hidden">
+          <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full filter blur-3xl"></div>
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full filter blur-3xl"></div>
             </div>
             
-            <div className="container mx-auto px-4 relative z-10">
-              <div className="text-center mb-16">
-                <h3 className="text-5xl font-bold mb-4">{language === 'fr' ? 'Pourquoi Nous Choisir ?' : 'Why Choose Us?'}</h3>
-                <p className="text-xl text-white/90 max-w-2xl mx-auto">
+            <div className="container mx-auto px-3 sm:px-4 relative z-10">
+              <div className="text-center mb-10 sm:mb-12 md:mb-16">
+                <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-2">{language === 'fr' ? 'Pourquoi Nous Choisir ?' : 'Why Choose Us?'}</h3>
+                <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto px-2">
                   {language === 'fr' 
                     ? 'Une expérience unique de création personnalisée, de la conception à la livraison'
                     : 'A unique personalized creation experience, from design to delivery'}
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 <Card className="text-center shadow-2xl bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all transform hover:scale-105">
                   <CardContent className="pt-8 pb-8">
                     <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -941,18 +948,18 @@ export default function App() {
             </Button>
           </div>
           
-          <div className="mb-8 flex flex-col md:flex-row gap-4">
+          <div className="mb-6 sm:mb-8 flex flex-col md:flex-row gap-3 sm:gap-4">
             <div className="flex gap-2 flex-wrap">
               {['all', 'bijoux-accessoires', 'decoration-maison', 'objets-art', 'accessoires-quotidiens'].map(cat => (
-                <Button key={cat} variant={selectedCategory === cat ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat)} className={selectedCategory === cat ? 'bg-gradient-to-r from-pink-500 to-purple-600' : ''}>
+                <Button key={cat} variant={selectedCategory === cat ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat)} className={`text-xs sm:text-sm ${selectedCategory === cat ? 'bg-gradient-to-r from-pink-500 to-purple-600' : ''}`}>
                   {cat === 'all' ? t('all') : cat === 'bijoux-accessoires' ? t('jewelry') : cat === 'decoration-maison' ? t('decoration') : cat === 'objets-art' ? t('artObjects') : t('accessories')}
                 </Button>
               ))}
             </div>
-            <div className="flex gap-4 flex-1">
-              <Input placeholder={t('search')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1" />
+            <div className="flex gap-2 sm:gap-4 flex-1">
+              <Input placeholder={t('search')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 text-sm sm:text-base" />
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[140px] sm:w-[200px] text-xs sm:text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="default">{t('default')}</SelectItem>
                   <SelectItem value="price-asc">{t('priceAsc')}</SelectItem>
@@ -1029,8 +1036,8 @@ export default function App() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {filteredProducts.map(product => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredProducts.map(product => (
                       <ProductCard 
                         key={product._id} 
                         product={product} 
@@ -1042,8 +1049,8 @@ export default function App() {
                         language={language} 
                         t={t} 
                       />
-                    ))}
-                  </div>
+            ))}
+          </div>
                 </div>
               )}
             </div>
@@ -1333,11 +1340,11 @@ export default function App() {
                             </span>
                           </div>
                         )}
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div><Label>{t('firstName')} *</Label><Input value={checkoutData.firstName} onChange={(e) => setCheckoutData({...checkoutData, firstName: e.target.value})} /></div>
-                          <div><Label>{t('lastName')} *</Label><Input value={checkoutData.lastName} onChange={(e) => setCheckoutData({...checkoutData, lastName: e.target.value})} /></div>
-                        </div>
-                        <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div><Label>{t('firstName')} *</Label><Input value={checkoutData.firstName} onChange={(e) => setCheckoutData({...checkoutData, firstName: e.target.value})} /></div>
+                      <div><Label>{t('lastName')} *</Label><Input value={checkoutData.lastName} onChange={(e) => setCheckoutData({...checkoutData, lastName: e.target.value})} /></div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
                           <div>
                             <Label>{t('email')} *</Label>
                             <Input 
@@ -1347,26 +1354,26 @@ export default function App() {
                               className="bg-gray-100"
                             />
                           </div>
-                          <div><Label>{t('phone')}</Label><Input value={checkoutData.phone} onChange={(e) => setCheckoutData({...checkoutData, phone: e.target.value})} /></div>
-                        </div>
-                        <div><Label>{t('address1')} *</Label><Input value={checkoutData.address1} onChange={(e) => setCheckoutData({...checkoutData, address1: e.target.value})} /></div>
-                        <div><Label>{t('address2')}</Label><Input value={checkoutData.address2} onChange={(e) => setCheckoutData({...checkoutData, address2: e.target.value})} /></div>
-                        <div className="grid md:grid-cols-3 gap-4">
-                          <div><Label>{t('city')}</Label><Input value={checkoutData.city} onChange={(e) => setCheckoutData({...checkoutData, city: e.target.value})} /></div>
-                          <div><Label>{t('province')}</Label><Input value={checkoutData.province} onChange={(e) => setCheckoutData({...checkoutData, province: e.target.value})} /></div>
-                          <div><Label>{t('postalCode')}</Label><Input value={checkoutData.postalCode} onChange={(e) => setCheckoutData({...checkoutData, postalCode: e.target.value})} /></div>
-                        </div>
-                        <div><Label>{t('country')} *</Label>
-                          <Select value={checkoutData.country} onValueChange={(value) => setCheckoutData({...checkoutData, country: value})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="canada">{t('canada')}</SelectItem>
-                              <SelectItem value="usa">{t('usa')}</SelectItem>
-                              <SelectItem value="france">{t('france')}</SelectItem>
-                              <SelectItem value="dominicaine">{t('dominicanRepublic')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div><Label>{t('phone')}</Label><Input value={checkoutData.phone} onChange={(e) => setCheckoutData({...checkoutData, phone: e.target.value})} /></div>
+                    </div>
+                    <div><Label>{t('address1')} *</Label><Input value={checkoutData.address1} onChange={(e) => setCheckoutData({...checkoutData, address1: e.target.value})} /></div>
+                    <div><Label>{t('address2')}</Label><Input value={checkoutData.address2} onChange={(e) => setCheckoutData({...checkoutData, address2: e.target.value})} /></div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div><Label>{t('city')}</Label><Input value={checkoutData.city} onChange={(e) => setCheckoutData({...checkoutData, city: e.target.value})} /></div>
+                      <div><Label>{t('province')}</Label><Input value={checkoutData.province} onChange={(e) => setCheckoutData({...checkoutData, province: e.target.value})} /></div>
+                      <div><Label>{t('postalCode')}</Label><Input value={checkoutData.postalCode} onChange={(e) => setCheckoutData({...checkoutData, postalCode: e.target.value})} /></div>
+                    </div>
+                    <div><Label>{t('country')} *</Label>
+                      <Select value={checkoutData.country} onValueChange={(value) => setCheckoutData({...checkoutData, country: value})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="canada">{t('canada')}</SelectItem>
+                          <SelectItem value="usa">{t('usa')}</SelectItem>
+                          <SelectItem value="france">{t('france')}</SelectItem>
+                          <SelectItem value="dominicaine">{t('dominicanRepublic')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                       </>
                     )}
                   </CardContent>
@@ -1440,10 +1447,10 @@ export default function App() {
 
       {cartOpen && (
         <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setCartOpen(false)}>
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold">{t('yourCart')} ({cart.length})</h3>
-              <Button variant="ghost" size="icon" onClick={() => setCartOpen(false)}><X className="w-6 h-6" /></Button>
+          <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-white shadow-2xl p-4 sm:p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold">{t('yourCart')} ({cart.length})</h3>
+              <Button variant="ghost" size="icon" onClick={() => setCartOpen(false)}><X className="w-5 h-5 sm:w-6 sm:h-6" /></Button>
             </div>
 
             {cart.length === 0 ? (
@@ -1454,17 +1461,17 @@ export default function App() {
                   {cart.map(item => (
                     <Card key={item.id}>
                       <CardContent className="p-4">
-                        <div className="flex gap-3">
-                          <img src={item.image} alt={item.name} className="w-20 h-20 rounded object-cover" />
-                          <div className="flex-1">
-                            <h4 className="font-bold">{item.name}</h4>
-                            <p className="text-sm text-gray-500">{item.price}$ {item.customization && '+ 10$ (personnalisé)'}</p>
-                            {item.customization && <Badge className="mt-1 bg-purple-100 text-purple-700">✨ {t('customized')}</Badge>}
-                            <div className="flex items-center gap-2 mt-2">
-                              <Button size="icon" variant="outline" onClick={() => updateQuantity(item.id, -1)}><Minus className="w-4 h-4" /></Button>
-                              <span className="w-8 text-center font-bold">{item.quantity}</span>
-                              <Button size="icon" variant="outline" onClick={() => updateQuantity(item.id, 1)}><Plus className="w-4 h-4" /></Button>
-                              <Button size="icon" variant="destructive" onClick={() => removeFromCart(item.id)} className="ml-auto"><Trash2 className="w-4 h-4" /></Button>
+                        <div className="flex gap-2 sm:gap-3">
+                          <img src={item.image} alt={item.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded object-cover flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-sm sm:text-base truncate">{item.name}</h4>
+                            <p className="text-xs sm:text-sm text-gray-500">{item.price}$ {item.customization && '+ 10$ (personnalisé)'}</p>
+                            {item.customization && <Badge className="mt-1 bg-purple-100 text-purple-700 text-xs">✨ {t('customized')}</Badge>}
+                            <div className="flex items-center gap-1.5 sm:gap-2 mt-2">
+                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => updateQuantity(item.id, -1)}><Minus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
+                              <span className="w-6 sm:w-8 text-center font-bold text-sm sm:text-base">{item.quantity}</span>
+                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => updateQuantity(item.id, 1)}><Plus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
+                              <Button size="icon" variant="destructive" className="h-7 w-7 sm:h-8 sm:w-8 ml-auto" onClick={() => removeFromCart(item.id)}><Trash2 className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
                             </div>
                           </div>
                         </div>
@@ -1478,7 +1485,7 @@ export default function App() {
                   <div className="flex justify-between text-sm text-gray-500"><span>{t('shipping')}</span><span>{t('calculatedAtCheckout')}</span></div>
                 </div>
 
-                <Button onClick={() => { setCartOpen(false); setCurrentPage('checkout') }} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700" size="lg">{t('proceedToCheckout')}</Button>
+                <Button onClick={() => { setCartOpen(false); setCurrentPage('checkout') }} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-sm sm:text-base" size="lg">{t('proceedToCheckout')}</Button>
               </>
             )}
           </div>
@@ -1487,19 +1494,19 @@ export default function App() {
 
       {/* Modal de personnalisation avec prévisualisation en temps réel */}
       {customizeModalOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-              <h2 className="text-2xl font-bold text-gray-800">✨ {language === 'fr' ? 'Personnalisez votre création' : 'Customize your creation'}</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-10">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">✨ {language === 'fr' ? 'Personnalisez votre création' : 'Customize your creation'}</h2>
               <button onClick={() => {
                 setCustomizeModalOpen(false)
                 setSelectedProduct(null)
-              }} className="text-gray-500 hover:text-gray-800">
-                <X size={28} />
+              }} className="text-gray-500 hover:text-gray-800 p-1">
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="p-6 grid md:grid-cols-2 gap-8">
+            <div className="p-4 sm:p-6 grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
               {/* Aperçu en temps réel */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-gray-700">{language === 'fr' ? 'Aperçu en temps réel' : 'Real-time preview'}</h3>
@@ -1544,8 +1551,8 @@ export default function App() {
                     <option value="or">{language === 'fr' ? 'Paillettes dorées' : 'Gold glitter'}</option>
                     <option value="argent">{language === 'fr' ? 'Paillettes argentées' : 'Silver glitter'}</option>
                   </select>
-                </div>
-
+                  </div>
+                  
                 {/* Fleur séchée */}
                 <div>
                   <label className="block text-sm font-semibold mb-3 text-gray-700">{language === 'fr' ? 'Fleur séchée' : 'Dried flower'}</label>
@@ -1559,7 +1566,7 @@ export default function App() {
                     <option value="rose">{language === 'fr' ? 'Rose 🌹' : 'Rose 🌹'}</option>
                     <option value="marguerite">{language === 'fr' ? 'Marguerite 🌼' : 'Daisy 🌼'}</option>
                   </select>
-                </div>
+                        </div>
 
                 {/* Initiale personnalisée */}
                 <div>
@@ -1572,7 +1579,7 @@ export default function App() {
                     className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none text-center text-2xl font-bold"
                     placeholder="M"
                   />
-                </div>
+                    </div>
 
                 {/* Texte personnalisé (optionnel) */}
                 <div>
@@ -1584,8 +1591,8 @@ export default function App() {
                 {/* Prix et ajout au panier */}
                 <div className="pt-4">
                   <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="flex justify-between mb-2"><span>{t('basePrice')}</span><span>{selectedProduct.price}$</span></div>
-                    <div className="flex justify-between mb-2 text-purple-600"><span>+ {t('customization')}</span><span>10.00$</span></div>
+                  <div className="flex justify-between mb-2"><span>{t('basePrice')}</span><span>{selectedProduct.price}$</span></div>
+                  <div className="flex justify-between mb-2 text-purple-600"><span>+ {t('customization')}</span><span>10.00$</span></div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2"><span>{t('total')}</span><span className="text-pink-500">{(selectedProduct.price + 10).toFixed(2)}$ CAD</span></div>
                   </div>
                   <Button 
@@ -1597,10 +1604,10 @@ export default function App() {
                   <p className="text-sm text-gray-500 text-center mt-3">⏱️ {language === 'fr' ? 'Délai de fabrication: 5-7 jours' : 'Production time: 5-7 days'}</p>
                 </div>
               </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
       <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
         <DialogContent className="max-w-4xl">
@@ -1622,13 +1629,13 @@ export default function App() {
       {/* Contact Modal */}
       {/* Search Modal */}
       <Dialog open={searchModalOpen} onOpenChange={setSearchModalOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center gap-2">
-              <Search className="w-6 h-6 text-pink-500" />
+            <DialogTitle className="text-xl sm:text-2xl flex items-center gap-2">
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500" />
               {language === 'fr' ? 'Rechercher un produit' : 'Search for a product'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm sm:text-base">
               {language === 'fr' 
                 ? 'Tapez le nom d\'un produit pour le trouver rapidement' 
                 : 'Type a product name to find it quickly'}
@@ -1636,19 +1643,19 @@ export default function App() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <Input
                 type="text"
                 placeholder={language === 'fr' ? 'Rechercher...' : 'Search...'}
                 value={headerSearchQuery}
                 onChange={(e) => setHeaderSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-lg"
+                className="pl-9 sm:pl-10 h-10 sm:h-12 text-base sm:text-lg"
                 autoFocus
               />
             </div>
             
             {headerSearchQuery && (
-              <div className="max-h-96 overflow-y-auto space-y-2">
+              <div className="max-h-64 sm:max-h-96 overflow-y-auto space-y-2">
                 {products
                   .filter(p => {
                     const name = language === 'fr' ? p.name_fr : p.name_en
@@ -1666,23 +1673,23 @@ export default function App() {
                         setHeaderSearchQuery('')
                       }}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex gap-2 sm:gap-4">
                           <img 
                             src={product.images?.[0] || 'https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=100'} 
                             alt={language === 'fr' ? product.name_fr : product.name_en}
-                            className="w-20 h-20 rounded object-cover"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded object-cover flex-shrink-0"
                           />
-                          <div className="flex-1">
-                            <h4 className="font-bold text-lg mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-sm sm:text-base md:text-lg mb-1 truncate">
                               {language === 'fr' ? product.name_fr : product.name_en}
                             </h4>
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
                               {language === 'fr' ? product.description_fr : product.description_en}
                             </p>
-                            <div className="flex items-center justify-between">
-                              <Badge variant="outline">{getCategoryDisplayName(product.category)}</Badge>
-                              <span className="text-xl font-bold text-pink-500">{product.price}$ CAD</span>
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs">{getCategoryDisplayName(product.category)}</Badge>
+                              <span className="text-base sm:text-lg md:text-xl font-bold text-pink-500">{product.price}$ CAD</span>
                             </div>
                           </div>
                         </div>
@@ -1811,31 +1818,31 @@ export default function App() {
           setReviewForm({ rating: 5, name: '', email: '', comment: '' })
         }
       }}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl w-[95vw] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
           {selectedProduct && (
             <>
               <DialogHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <DialogTitle className="text-3xl font-bold mb-2">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
                       {language === 'fr' ? selectedProduct.name_fr : selectedProduct.name_en}
                     </DialogTitle>
-                    <div className="flex items-center gap-4">
-                      <p className="text-3xl font-bold text-pink-500">{selectedProduct.price}$ CAD</p>
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-pink-500">{selectedProduct.price}$ CAD</p>
                       {selectedProduct.isCustomizable && (
-                        <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+                        <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs sm:text-sm">
                           ✨ {language === 'fr' ? 'Personnalisable' : 'Customizable'}
                         </Badge>
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => setProductDetailsOpen(false)}>
+                  <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={() => setProductDetailsOpen(false)}>
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
               </DialogHeader>
 
-              <div className="grid md:grid-cols-2 gap-6 mt-4">
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mt-4">
                 {/* Image Gallery */}
                 <div className="space-y-4">
                   <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square">
@@ -1916,17 +1923,17 @@ export default function App() {
 
                 {/* Product Info */}
                 <div className="space-y-6">
-                  <div>
+            <div>
                     <h3 className="text-xl font-bold mb-3">{language === 'fr' ? 'Description' : 'Description'}</h3>
                     <p className="text-gray-700 leading-relaxed">
                       {language === 'fr' ? selectedProduct.description_fr : selectedProduct.description_en || 
                        (language === 'fr' ? 'Aucune description disponible' : 'No description available')}
                     </p>
-                  </div>
+            </div>
 
                   <div className="border-t pt-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
+            <div>
                         <span className="text-gray-500">{language === 'fr' ? 'Catégorie' : 'Category'}:</span>
                         <p className="font-semibold">{getCategoryDisplayName(selectedProduct.category)}</p>
                       </div>
@@ -2140,37 +2147,37 @@ export default function App() {
         </div>
       )}
 
-      <footer className="bg-gray-900 text-white py-12 mt-20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <LogoComponent size="default" />
-                <h4 className="text-xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+      <footer className="bg-gray-900 text-white py-8 sm:py-12 mt-12 sm:mt-20">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <LogoComponent size="small" />
+                <h4 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
                   {siteContent.header?.title || 'Missa Créations'}
                 </h4>
               </div>
-              <p className="text-gray-400 mb-6">
+              <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6">
                 {siteContent.footer?.description || 'Créations uniques en résine, faites main avec amour'}
               </p>
               
               {/* Formulaire d'abonnement newsletter */}
-              <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-lg p-4 border border-pink-500/20">
-                <h5 className="font-bold mb-3 text-white">
+              <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-lg p-3 sm:p-4 border border-pink-500/20">
+                <h5 className="font-bold mb-2 sm:mb-3 text-white text-sm sm:text-base">
                   {language === 'fr' ? '✨ Abonnez-vous à notre newsletter' : '✨ Subscribe to our newsletter'}
                 </h5>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">
                   {language === 'fr' 
                     ? 'Recevez nos offres exclusives et nouveautés en avant-première !' 
                     : 'Get our exclusive offers and new releases first!'}
                 </p>
-                <form onSubmit={handleNewsletterSubscribe} className="space-y-3">
+                <form onSubmit={handleNewsletterSubscribe} className="space-y-2 sm:space-y-3">
                   <Input
                     type="text"
                     placeholder={language === 'fr' ? 'Votre nom (optionnel)' : 'Your name (optional)'}
                     value={newsletterName}
                     onChange={(e) => setNewsletterName(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm sm:text-base h-9 sm:h-10"
                   />
                   <Input
                     type="email"
@@ -2178,16 +2185,16 @@ export default function App() {
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
                     required
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm sm:text-base h-9 sm:h-10"
                   />
                   <Button
                     type="submit"
                     disabled={newsletterLoading}
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xs sm:text-sm h-9 sm:h-10"
                   >
                     {newsletterLoading ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2"></div>
                         {language === 'fr' ? 'Abonnement...' : 'Subscribing...'}
                       </>
                     ) : (
@@ -2200,26 +2207,26 @@ export default function App() {
               </div>
             </div>
             <div>
-              <h4 className="font-bold mb-4">Liens rapides</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="hover:text-pink-400 cursor-pointer" onClick={() => setCurrentPage('home')}>{t('home')}</li>
-                <li className="hover:text-pink-400 cursor-pointer" onClick={() => setCurrentPage('products')}>{t('products')}</li>
-                <li className="hover:text-pink-400 cursor-pointer" onClick={() => setCurrentPage('blog')}>{t('blog')}</li>
-                <li className="hover:text-pink-400 cursor-pointer" onClick={() => setContactModalOpen(true)}>{t('contact')}</li>
+              <h4 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">Liens rapides</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-gray-400 text-sm sm:text-base">
+                <li className="hover:text-pink-400 cursor-pointer transition" onClick={() => setCurrentPage('home')}>{t('home')}</li>
+                <li className="hover:text-pink-400 cursor-pointer transition" onClick={() => setCurrentPage('products')}>{t('products')}</li>
+                <li className="hover:text-pink-400 cursor-pointer transition" onClick={() => setCurrentPage('blog')}>{t('blog')}</li>
+                <li className="hover:text-pink-400 cursor-pointer transition" onClick={() => setContactModalOpen(true)}>{t('contact')}</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">{t('support')}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="hover:text-pink-400 cursor-pointer"><a href="/faq">{t('faq')}</a></li>
-                <li className="hover:text-pink-400 cursor-pointer"><a href="/livraison">{t('delivery')}</a></li>
-                <li className="hover:text-pink-400 cursor-pointer"><a href="/retours">{t('returns')}</a></li>
-                <li className="hover:text-pink-400 cursor-pointer"><a href="/garantie">{t('warranty')}</a></li>
+              <h4 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">{t('support')}</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-gray-400 text-sm sm:text-base">
+                <li className="hover:text-pink-400 cursor-pointer transition"><a href="/faq">{t('faq')}</a></li>
+                <li className="hover:text-pink-400 cursor-pointer transition"><a href="/livraison">{t('delivery')}</a></li>
+                <li className="hover:text-pink-400 cursor-pointer transition"><a href="/retours">{t('returns')}</a></li>
+                <li className="hover:text-pink-400 cursor-pointer transition"><a href="/garantie">{t('warranty')}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-4">{t('followUs')}</h4>
-              <div className="flex gap-4">
+              <h4 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">{t('followUs')}</h4>
+              <div className="flex gap-3 sm:gap-4">
                 <a 
                   href={siteContent.footer?.socialLinks?.facebook || 'https://facebook.com/missacreations'} 
                   target="_blank" 
@@ -2253,7 +2260,7 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
             <p>© 2024 Missa Créations. {t('allRightsReserved')}.</p>
           </div>
         </div>
@@ -2261,14 +2268,14 @@ export default function App() {
 
       {/* Popup Newsletter - Très Attractif */}
       {newsletterPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up max-h-[95vh] overflow-y-auto">
             {/* Bouton fermer */}
             <button
               onClick={handleCloseNewsletterPopup}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-lg"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-lg"
             >
-              <X className="w-5 h-5 text-gray-700" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
             </button>
 
             {/* Background avec gradient animé */}
@@ -2279,19 +2286,19 @@ export default function App() {
             </div>
 
             {/* Contenu */}
-            <div className="relative z-10 p-8 md:p-12">
+            <div className="relative z-10 p-4 sm:p-6 md:p-8 lg:p-12">
               {/* Icône animée */}
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-4 sm:mb-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-white/30 rounded-full animate-ping"></div>
-                  <div className="relative w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border-4 border-white/50">
-                    <Sparkles className="w-12 h-12 text-white animate-pulse" />
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border-2 sm:border-4 border-white/50">
+                    <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white animate-pulse" />
                   </div>
                 </div>
               </div>
 
               {/* Titre principal */}
-              <h2 className="text-4xl md:text-5xl font-black text-center text-white mb-4 drop-shadow-lg">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-center text-white mb-3 sm:mb-4 drop-shadow-lg px-2">
                 {language === 'fr' ? (
                   <>
                     🎉 Ne Ratez Plus<br />
@@ -2310,28 +2317,28 @@ export default function App() {
               </h2>
 
               {/* Sous-titre */}
-              <p className="text-xl text-center text-white/95 mb-2 font-semibold">
+              <p className="text-base sm:text-lg md:text-xl text-center text-white/95 mb-2 font-semibold px-2">
                 {language === 'fr' 
                   ? '✨ Soyez le premier informé de nos nouvelles créations ✨' 
                   : '✨ Be the first to know about our new creations ✨'}
               </p>
-              <p className="text-center text-white/80 mb-8 text-lg">
+              <p className="text-center text-white/80 mb-6 sm:mb-8 text-sm sm:text-base md:text-lg px-2">
                 {language === 'fr' 
                   ? 'Abonnez-vous maintenant et recevez 10% de réduction sur votre première commande !' 
                   : 'Subscribe now and get 10% off your first order!'}
               </p>
 
               {/* Formulaire */}
-              <form onSubmit={(e) => handleNewsletterSubscribe(e, true)} className="space-y-4">
-                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl">
-                  <div className="space-y-4">
+              <form onSubmit={(e) => handleNewsletterSubscribe(e, true)} className="space-y-3 sm:space-y-4">
+                <div className="bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
                       <Input
                         type="text"
                         placeholder={language === 'fr' ? '👤 Votre prénom (optionnel)' : '👤 Your first name (optional)'}
                         value={popupNewsletterName}
                         onChange={(e) => setPopupNewsletterName(e.target.value)}
-                        className="h-14 text-lg border-2 border-gray-200 focus:border-pink-500 rounded-xl"
+                        className="h-12 sm:h-14 text-base sm:text-lg border-2 border-gray-200 focus:border-pink-500 rounded-xl"
                       />
                     </div>
                     <div>
@@ -2498,12 +2505,12 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart, onCustomiz
     : 'https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=800&q=80'
   
   return (
-    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300">
+    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
       <div className="relative overflow-hidden">
         <img 
           src={productImage} 
           alt={language === 'fr' ? product.name_fr : product.name_en} 
-          className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300 cursor-pointer" 
+          className="w-full h-48 sm:h-56 md:h-64 object-cover group-hover:scale-110 transition-transform duration-300 cursor-pointer" 
           onClick={() => onViewDetails && onViewDetails(product)}
           loading="lazy"
           decoding="async"
@@ -2511,23 +2518,27 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart, onCustomiz
             e.target.src = 'https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=800&q=80'
           }}
         />
-        {product.isCustomizable && <Badge className="absolute top-3 right-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white">Personnalisable</Badge>}
-        <button onClick={() => onToggleFavorite(product)} className="absolute top-3 left-3 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition z-10">
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-pink-500 text-pink-500' : 'text-gray-600'}`} />
+        {product.isCustomizable && (
+          <Badge className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs sm:text-sm px-2 py-0.5 sm:px-2.5 sm:py-1">
+            Personnalisable
+          </Badge>
+        )}
+        <button onClick={() => onToggleFavorite(product)} className="absolute top-2 left-2 sm:top-3 sm:left-3 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition z-10">
+          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-pink-500 text-pink-500' : 'text-gray-600'}`} />
         </button>
       </div>
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4 flex-1 flex flex-col">
         <h3 
-          className="font-bold text-lg mb-2 cursor-pointer hover:text-pink-500 transition" 
+          className="font-bold text-base sm:text-lg mb-1 sm:mb-2 cursor-pointer hover:text-pink-500 transition line-clamp-2" 
           onClick={() => onViewDetails && onViewDetails(product)}
         >
           {language === 'fr' ? product.name_fr : product.name_en}
         </h3>
-        <p className="text-2xl font-bold text-pink-500 mb-4">{product.price}$ CAD</p>
-        <div className="flex gap-2">
-          <Button className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700" onClick={() => onAddToCart(product)}>{t('addToCart')}</Button>
+        <p className="text-xl sm:text-2xl font-bold text-pink-500 mb-3 sm:mb-4">{product.price}$ CAD</p>
+        <div className="flex gap-2 mt-auto">
+          <Button className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-xs sm:text-sm h-9 sm:h-10" onClick={() => onAddToCart(product)}>{t('addToCart')}</Button>
           {product.isCustomizable && (
-            <Button size="icon" variant="outline" onClick={() => onCustomize(product)} className="border-pink-500 text-pink-500 hover:bg-pink-50"><Sparkles className="w-5 h-5" /></Button>
+            <Button size="icon" variant="outline" onClick={() => onCustomize(product)} className="border-pink-500 text-pink-500 hover:bg-pink-50 w-9 h-9 sm:w-10 sm:h-10"><Sparkles className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
           )}
         </div>
       </CardContent>
