@@ -1,136 +1,56 @@
-import { MongoClient } from 'mongodb'
 import { NextResponse } from 'next/server'
+import { supabaseServer } from '@/lib/supabase-server'
 
-let client
-let db
-
-async function connectDB() {
-  if (db) return db
-  
+export async function GET(request) {
   try {
-    client = new MongoClient(process.env.MONGO_URL)
-    await client.connect()
-    db = client.db('missa_creations')
-    console.log('✅ Connected to MongoDB')
-    return db
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error)
-    throw error
-  }
-}
-
-async function initializeProducts() {
-  const database = await connectDB()
-  const products = database.collection('products')
-  
-  const count = await products.countDocuments()
-  if (count > 0) return // Vérifier si produits existent
-  
-  const demoProducts = [
-    {
-      name_fr: 'Cœurs Entrelacés Fleurs Séchées',
-      name_en: 'Intertwined Hearts with Dried Flowers',
-      description_fr: 'Décoration romantique en résine avec cœurs entrelacés et fleurs séchées rouges, base corail',
-      description_en: 'Romantic resin decoration with intertwined hearts and red dried flowers, coral base',
-      category: 'decoration',
-      price: 55,
-      promoPrice: null,
-      weight: 300,
-      stock: 8,
-      minStock: 2,
-      isCustomizable: true,
-      isActive: true,
-      images: ['https://customer-assets.emergentagent.com/job_handmade-resin-1/artifacts/lu1ibz6r_1000404735.jpg']
-    },
-    {
-      name_fr: 'Duo de Cœurs Roses et Fleurs',
-      name_en: 'Pink Hearts Duo with Flowers',
-      description_fr: 'Sculpture décorative en résine avec deux cœurs roses marbrés et fleurs rouges',
-      description_en: 'Decorative resin sculpture with two pink marbled hearts and red flowers',
-      category: 'decoration',
-      price: 52,
-      promoPrice: null,
-      weight: 280,
-      stock: 10,
-      minStock: 2,
-      isCustomizable: true,
-      isActive: true,
-      images: ['https://customer-assets.emergentagent.com/job_handmade-resin-1/artifacts/pr0nimwc_1000404736.jpg']
-    },
-    {
-      name_fr: 'Moule Étoiles et Lunes',
-      name_en: 'Stars and Moons Mold',
-      description_fr: 'Moule en silicone pour créations en résine - étoiles et croissants de lune',
-      description_en: 'Silicone mold for resin creations - stars and crescent moons',
-      category: 'accessoires',
-      price: 28,
-      promoPrice: null,
-      weight: 150,
-      stock: 20,
-      minStock: 5,
-      isCustomizable: false,
-      isActive: true,
-      images: ['https://customer-assets.emergentagent.com/job_handmade-resin-1/artifacts/7e2y39r7_1000404737.jpg']
-    },
-    {
-      name_fr: 'Pendentif Lune Dorée',
-      name_en: 'Golden Moon Pendant',
-      description_fr: 'Pendentif croissant de lune en résine bicolore blanc et or pailleté',
-      description_en: 'Crescent moon pendant in bicolor resin - white and gold glitter',
-      category: 'bijoux',
-      price: 35,
-      promoPrice: null,
-      weight: 15,
-      stock: 25,
-      minStock: 5,
-      isCustomizable: true,
-      isActive: true,
-      images: ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600']
-    },
-    {
-      name_fr: 'Boucles d\'oreilles Étoiles',
-      name_en: 'Star Earrings',
-      description_fr: 'Élégantes boucles d\'oreilles étoiles en résine nacrée',
-      description_en: 'Elegant star earrings in pearlescent resin',
-      category: 'bijoux',
-      price: 32,
-      promoPrice: null,
-      weight: 10,
-      stock: 30,
-      minStock: 8,
-      isCustomizable: true,
-      isActive: true,
-      images: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600']
-    },
-    {
-      name_fr: 'Porte-clés Cœur Floral',
-      name_en: 'Floral Heart Keychain',
-      description_fr: 'Porte-clés cœur en résine avec fleurs séchées encapsulées',
-      description_en: 'Heart keychain in resin with encapsulated dried flowers',
-      category: 'cadeaux',
-      price: 22,
-      promoPrice: null,
-      weight: 25,
-      stock: 40,
-      minStock: 10,
-      isCustomizable: true,
-      isActive: true,
-      images: ['https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?w=600']
-    }
-  ]
-  
-  await products.insertMany(demoProducts)
-  console.log('✅ Demo products initialized')
-}
-
-export async function GET() {
-  try {
-    await connectDB()
-    await initializeProducts()
-    const database = await connectDB()
+    // Headers de cache pour améliorer les performances
+    const cacheControl = request.headers.get('cache-control') || 'public, s-maxage=60, stale-while-revalidate=300'
     
-    const products = await database.collection('products').find({ isActive: true }).toArray()
-    return NextResponse.json({ success: true, products })
+    // Vérifier si on veut tous les produits (pour l'admin) ou seulement les actifs (pour le site)
+    const { searchParams } = new URL(request.url)
+    const allProducts = searchParams.get('all') === 'true'
+    
+    let query = supabaseServer
+      .from('products')
+      .select('*')
+    
+    // Si on ne demande pas tous les produits, filtrer seulement les actifs
+    if (!allProducts) {
+      query = query.eq('is_active', true)
+    }
+    
+    query = query.order('created_at', { ascending: false })
+    
+    const { data: products, error } = await query
+    
+    if (error) throw error
+    
+    // Convertir les noms de colonnes snake_case vers camelCase pour compatibilité frontend
+    const formattedProducts = products.map(p => ({
+      _id: p.id,
+      name_fr: p.name_fr,
+      name_en: p.name_en,
+      description_fr: p.description_fr,
+      description_en: p.description_en,
+      category: p.category,
+      price: p.price,
+      promoPrice: p.promo_price,
+      weight: p.weight,
+      stock: p.stock,
+      minStock: p.min_stock,
+      isCustomizable: p.is_customizable,
+      isActive: p.is_active,
+      images: p.images || []
+    }))
+    
+    const response = NextResponse.json({ success: true, products: formattedProducts })
+    
+    // Headers de cache
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    response.headers.set('CDN-Cache-Control', 'public, s-maxage=60')
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=60')
+    
+    return response
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
@@ -139,17 +59,34 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    await connectDB()
-    const database = await connectDB()
     const body = await request.json()
     
-    const product = {
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    // Convertir camelCase vers snake_case pour Supabase
+    const productData = {
+      name_fr: body.name_fr,
+      name_en: body.name_en,
+      description_fr: body.description_fr,
+      description_en: body.description_en,
+      category: body.category,
+      price: body.price,
+      promo_price: body.promoPrice || null,
+      weight: body.weight,
+      stock: body.stock,
+      min_stock: body.minStock,
+      is_customizable: body.isCustomizable,
+      is_active: body.isActive !== undefined ? body.isActive : true,
+      images: body.images || []
     }
-    const result = await database.collection('products').insertOne(product)
-    return NextResponse.json({ success: true, productId: result.insertedId })
+    
+    const { data, error } = await supabaseServer
+      .from('products')
+      .insert(productData)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return NextResponse.json({ success: true, productId: data.id })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })

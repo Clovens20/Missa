@@ -18,10 +18,7 @@
 
 ### 📝 3. Blog Complet  
 - Page `/blog` avec liste d'articles
-- API `/api/blog` avec 3 articles demo :
-  * "Comment entretenir vos bijoux en résine" (Tutoriels)
-  * "Tendances résine 2024" (Inspiration)
-  * "Nouvelle collection Océan" (Nouveautés)
+- API `/api/blog` pour gestion des articles
 - Filtres par catégorie
 - Design moderne avec images haute qualité
 - Support FR/EN complet
@@ -29,10 +26,6 @@
 ### 🎟️ 4. Codes Promo
 - Champ code promo dans checkout
 - API `/api/promo` avec validation
-- 3 codes demo actifs :
-  * **MISSA10** : 10% de réduction
-  * **WELCOME** : 15% de réduction
-  * **SAVE20** : 20$ de réduction fixe
 - Calcul automatique avec réduction affichée
 - Messages de succès/erreur
 
@@ -46,7 +39,7 @@
 │   └── LanguageContext.js        # Context API pour langue
 ├── app/
 │   ├── api/
-│   │   ├── blog/route.js         # API blog avec articles demo
+│   │   ├── blog/route.js         # API blog
 │   │   └── promo/route.js        # API codes promo
 │   ├── layout.js                 # Mis à jour avec LanguageProvider
 │   └── page.js                   # Refonte complète avec toutes features
@@ -89,7 +82,7 @@ git push origin main
 
 ### 3. Blog
 - Cliquez sur "Blog" dans navigation
-- 3 articles demo affichés avec images
+- Articles affichés avec images
 - Filtres par catégorie fonctionnels
 - Changez de langue → articles traduits
 
@@ -130,16 +123,10 @@ git push origin main
 
 ## 🎟️ Codes Promo Demo
 
-Testez ces codes au checkout :
-- `MISSA10` → 10% de réduction
-- `WELCOME` → 15% de réduction
-- `SAVE20` → 20$ de réduction fixe
-
 ## 📝 Notes
 
 - Tous les fichiers sont déjà committés (auto-commit)
 - Le push nécessite authentification GitHub
-- Les APIs blog et promo initialisent des données demo automatiquement
 - Les traductions couvrent TOUTE l'interface
 - Les favoris et langue sont sauvegardés en localStorage
 

@@ -18,13 +18,11 @@ Site e-commerce professionnel COMPLET pour **Missa Créations**, une boutique de
 
 ### 📝 Blog Complet
 - Page /blog avec articles
-- 3 articles demo (Tutoriels, Inspiration, Nouveautés)
 - Filtres par catégorie
 - Support multilingue
 
 ### 🎟️ Codes Promo
 - Validation codes dans checkout
-- 3 codes demo actifs: MISSA10 (10%), WELCOME (15%), SAVE20 (20$)
 - Calcul automatique réduction
 
 ## ✨ Fonctionnalités Principales (Phase 1)
@@ -76,7 +74,7 @@ Site e-commerce professionnel COMPLET pour **Missa Créations**, une boutique de
 
 - **Framework** : Next.js 14 (App Router)
 - **Styling** : Tailwind CSS + shadcn/ui
-- **Base de données** : MongoDB
+- **Base de données** : Supabase
 - **Authentification** : JWT (à implémenter)
 - **Paiement** : Stripe (à intégrer)
 - **Emails** : Resend (à intégrer)
@@ -84,7 +82,7 @@ Site e-commerce professionnel COMPLET pour **Missa Créations**, une boutique de
 
 ## 📋 Intégrations à Venir
 
-- ✅ Supabase (migration depuis MongoDB)
+- ✅ Supabase (base de données principale)
 - ✅ Stripe (paiements sécurisés)
 - ✅ Resend (emails de confirmation)
 - ✅ Cloudinary/AWS S3 (upload images)
@@ -94,21 +92,22 @@ Site e-commerce professionnel COMPLET pour **Missa Créations**, une boutique de
 
 ```bash
 # Installation
-yarn install
+npm install
 
 # Développement
-yarn dev
+npm run dev
 
 # Production
-yarn build
-yarn start
+npm run build
+npm start
 ```
 
 ## 📝 Variables d'Environnement
 
 ```env
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=missa_creations
+NEXT_PUBLIC_SUPABASE_URL=votre_url_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_anon_key
+SUPABASE_SERVICE_ROLE_KEY=votre_service_role_key
 NEXT_PUBLIC_BASE_URL=https://your-domain.com
 ```
 
@@ -129,20 +128,10 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 └── public/                     # Assets statiques
 ```
 
-## 🎯 Produits Demo
+## 🔐 Authentification
 
-6 produits de démonstration inclus :
-1. Collier Fleur Résine - 45$
-2. Porte-clés Personnalisé - 25$
-3. Plateau Déco Résine - 65$
-4. Boucles d'oreilles Océan - 35$
-5. Dessous de verre Set - 40$
-6. Bracelet Personnalisé - 38$
-
-## 🔐 Accès Demo
-
-- **Admin** : admin@missa.com / admin123
-- **Employé** : MISSA-001
+- **Admin** : Connexion avec ID admin (UUID)
+- **Employé** : Connexion avec code employé (MISSA-XXXX)
 
 ## 🌐 Langues
 
@@ -169,10 +158,12 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 
 ## 📊 Base de Données
 
-**Collections MongoDB :**
+**Tables Supabase :**
 - `products` : Catalogue produits
 - `orders` : Commandes avec personnalisations
-- `users` : Admins et employés
+- `blog_posts` : Articles de blog
+- `promo_codes` : Codes promotionnels
+- `employees` : Employés et admins
 
 ## 🔄 Roadmap Phase 2
 

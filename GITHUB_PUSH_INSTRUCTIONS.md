@@ -46,7 +46,7 @@ git push -u origin main
 ✅ Interface Employé (/sousadmin)
 ✅ Module de personnalisation
 ✅ Système de panier et checkout
-✅ 6 produits demo
+✅ Gestion des produits via interface admin
 ✅ Documentation README.md
 
 ## 🎯 Après le push :

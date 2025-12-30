@@ -1,24 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShoppingCart, LogOut, Eye } from 'lucide-react'
+import { ShoppingCart, LogOut, Eye, Printer, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import ShippingLabel from '@/components/ShippingLabel'
+import ThankYouCard from '@/components/ThankYouCard'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 export default function EmployeePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [employeeCode, setEmployeeCode] = useState('')
+  const [employeeName, setEmployeeName] = useState('')
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false)
+  const [orderStatus, setOrderStatus] = useState('')
+  const [orderNotes, setOrderNotes] = useState('')
+  const [labelPreviewOpen, setLabelPreviewOpen] = useState(false)
+  const [cardPreviewOpen, setCardPreviewOpen] = useState(false)
+  const [orderForLabel, setOrderForLabel] = useState(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -29,13 +39,32 @@ export default function EmployeePage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    // For demo purposes
-    if (employeeCode.startsWith('MISSA-')) {
-      setIsLoggedIn(true)
-      toast({ title: '✅ Connecté', description: 'Bienvenue' })
-      loadOrders()
-    } else {
-      toast({ title: '❌ Erreur', description: 'Code invalide', variant: 'destructive' })
+    
+    if (!employeeCode || !employeeCode.startsWith('MISSA-')) {
+      toast({ title: '❌ Erreur', description: 'Format de code invalide. Format attendu: MISSA-XXXX', variant: 'destructive' })
+      return
+    }
+    
+    try {
+      const res = await fetch('/api/admin/employees/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: employeeCode.toUpperCase() })
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        setIsLoggedIn(true)
+        setEmployeeName(data.employee.name || '')
+        toast({ title: '✅ Connecté', description: `Bienvenue ${data.employee.name || ''}` })
+        loadOrders()
+      } else {
+        toast({ title: '❌ Erreur', description: data.error || 'Code invalide', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error(error)
+      toast({ title: '❌ Erreur', description: 'Erreur de connexion', variant: 'destructive' })
     }
   }
 
@@ -67,10 +96,14 @@ export default function EmployeePage() {
               <div>
                 <Label>Code Employé</Label>
                 <Input 
-                  placeholder="MISSA-XXX"
+                  placeholder="MISSA-0001"
                   value={employeeCode}
-                  onChange={(e) => setEmployeeCode(e.target.value)}
+                  onChange={(e) => setEmployeeCode(e.target.value.toUpperCase())}
+                  className="text-center font-mono text-lg tracking-wider"
                 />
+                <p className="text-xs text-gray-500 mt-2">
+                  Format: MISSA-XXXX (ex: MISSA-0001)
+                </p>
               </div>
               <Button 
                 type="submit" 
@@ -80,9 +113,6 @@ export default function EmployeePage() {
                 Se connecter
               </Button>
             </form>
-            <p className="text-xs text-center mt-4 text-gray-500">
-              Demo: MISSA-001
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -97,9 +127,13 @@ export default function EmployeePage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
               Interface Employé
             </h1>
-            <p className="text-gray-500">Code: {employeeCode}</p>
+            <p className="text-gray-500">{employeeName || 'Employé'}</p>
           </div>
-          <Button variant="outline" onClick={() => setIsLoggedIn(false)}>
+          <Button variant="outline" onClick={() => {
+            setIsLoggedIn(false)
+            setEmployeeCode('')
+            setEmployeeName('')
+          }}>
             <LogOut className="w-4 h-4 mr-2" />
             Déconnexion
           </Button>
@@ -138,6 +172,8 @@ export default function EmployeePage() {
                         variant="outline"
                         onClick={() => {
                           setSelectedOrder(order)
+                          setOrderStatus(order.status)
+                          setOrderNotes(order.notes || '')
                           setOrderDetailsOpen(true)
                         }}
                       >
@@ -193,7 +229,7 @@ export default function EmployeePage() {
 
               <div>
                 <Label>Changer le statut</Label>
-                <Select defaultValue={selectedOrder.status}>
+                <Select value={orderStatus} onValueChange={setOrderStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -207,7 +243,178 @@ export default function EmployeePage() {
 
               <div>
                 <Label>Notes</Label>
-                <Textarea placeholder="Ajouter des notes..." rows={3} />
+                <Textarea 
+                  placeholder="Ajouter des notes..." 
+                  rows={3}
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Bouton pour générer étiquette et carte */}
+              <div className="pt-4 border-t">
+                <div className="flex gap-3 mb-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setOrderForLabel(selectedOrder)
+                      setLabelPreviewOpen(true)
+                    }}
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Générer Étiquette
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setOrderForLabel(selectedOrder)
+                      setCardPreviewOpen(true)
+                    }}
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Générer Carte
+                  </Button>
+                </div>
+              </div>
+
+              <Button 
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/orders/${selectedOrder._id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        status: orderStatus,
+                        notes: orderNotes
+                      })
+                    })
+                    const data = await res.json()
+                    if (data.success) {
+                      toast({ title: '✅ Commande mise à jour' })
+                      setOrderDetailsOpen(false)
+                      loadOrders()
+                    } else {
+                      toast({ title: '❌ Erreur', variant: 'destructive' })
+                    }
+                  } catch (error) {
+                    toast({ title: '❌ Erreur', variant: 'destructive' })
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600"
+              >
+                Enregistrer les modifications
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Label Preview Dialog */}
+      <Dialog open={labelPreviewOpen} onOpenChange={setLabelPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Étiquette d'expédition</DialogTitle>
+            <DialogDescription>
+              Aperçu de l'étiquette pour la commande {orderForLabel?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
+          {orderForLabel && (
+            <div className="space-y-6">
+              <div className="flex gap-4 justify-end">
+                <Button 
+                  onClick={async () => {
+                    const labelElement = document.getElementById('shipping-label')
+                    
+                    if (labelElement) {
+                      try {
+                        const labelCanvas = await html2canvas(labelElement, { scale: 2, useCORS: true })
+                        
+                        // Étiquette 4x6 pouces
+                        const pdf = new jsPDF('portrait', 'in', [6, 4])
+                        const labelImgData = labelCanvas.toDataURL('image/png')
+                        pdf.addImage(labelImgData, 'PNG', 0, 0, 4, 6)
+                        
+                        pdf.save(`etiquette-${orderForLabel.orderNumber}.pdf`)
+                        toast({ title: '✅ PDF généré', description: 'Étiquette téléchargée' })
+                      } catch (error) {
+                        console.error(error)
+                        toast({ title: '❌ Erreur', description: 'Impossible de générer le PDF', variant: 'destructive' })
+                      }
+                    }
+                  }}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Télécharger PDF
+                </Button>
+                <Button 
+                  onClick={() => window.print()}
+                  variant="outline"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Imprimer
+                </Button>
+              </div>
+              
+              <div id="shipping-label">
+                <ShippingLabel order={orderForLabel} />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Card Preview Dialog */}
+      <Dialog open={cardPreviewOpen} onOpenChange={setCardPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Carte de remerciement</DialogTitle>
+            <DialogDescription>
+              Aperçu de la carte pour la commande {orderForLabel?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
+          {orderForLabel && (
+            <div className="space-y-6">
+              <div className="flex gap-4 justify-end">
+                <Button 
+                  onClick={async () => {
+                    const cardElement = document.getElementById('thank-you-card')
+                    
+                    if (cardElement) {
+                      try {
+                        const cardCanvas = await html2canvas(cardElement, { scale: 2, useCORS: true })
+                        
+                        // Carte 8.5x11 pouces (format lettre US)
+                        const pdf = new jsPDF('portrait', 'in', [11, 8.5])
+                        const cardImgData = cardCanvas.toDataURL('image/png')
+                        pdf.addImage(cardImgData, 'PNG', 0, 0, 8.5, 11)
+                        
+                        pdf.save(`carte-${orderForLabel.orderNumber}.pdf`)
+                        toast({ title: '✅ PDF généré', description: 'Carte téléchargée' })
+                      } catch (error) {
+                        console.error(error)
+                        toast({ title: '❌ Erreur', description: 'Impossible de générer le PDF', variant: 'destructive' })
+                      }
+                    }
+                  }}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Télécharger PDF
+                </Button>
+                <Button 
+                  onClick={() => window.print()}
+                  variant="outline"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Imprimer
+                </Button>
+              </div>
+              
+              <div id="thank-you-card">
+                <ThankYouCard order={orderForLabel} />
               </div>
             </div>
           )}

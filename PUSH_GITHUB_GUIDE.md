@@ -64,7 +64,7 @@ git push origin main --force
 - ✅ Interface Admin complète (/admin)
 - ✅ Interface Employé (/sousadmin)
 - ✅ Backend API MongoDB
-- ✅ 6 produits demo
+- ✅ Gestion des produits via interface admin
 
 ### Phase 2 - Nouvelles Fonctionnalités ✨
 - ✅ **Multilingue FR/EN complet**
@@ -81,7 +81,6 @@ git push origin main --force
 
 - ✅ **Blog complet**
   * Page /blog avec articles
-  * 3 articles demo (Tutoriels, Inspiration, Nouveautés)
   * Filtres par catégorie
   * Support multilingue
 

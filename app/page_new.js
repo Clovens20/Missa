@@ -13,6 +13,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+// Composant Logo avec fallback
+function LogoComponent() {
+  const [logoError, setLogoError] = useState(false)
+  
+  // Fallback élégant si le logo ne charge pas
+  if (logoError) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
+        M
+      </div>
+    )
+  }
+  
+  return (
+    <img 
+      src="/missa-logo.png" 
+      alt="Missa Créations" 
+      className="h-12 w-auto flex-shrink-0"
+      onError={() => setLogoError(true)}
+    />
+  )
+}
+
 export default function App() {
   const { language, toggleLanguage, t } = useLanguage()
   const [currentPage, setCurrentPage] = useState('home')
@@ -246,9 +269,7 @@ export default function App() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                M
-              </div>
+              <LogoComponent />
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
                   Missa Créations
