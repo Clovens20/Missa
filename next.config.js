@@ -1,5 +1,5 @@
 const nextConfig = {
-  output: 'standalone',
+  // output: 'standalone', // Commenté pour Vercel - standalone est pour Docker
   images: {
     remotePatterns: [
       {
