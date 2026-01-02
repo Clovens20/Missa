@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Plus, Edit, Trash2, Search, Eye, EyeOff, FileText, Settings, Globe, Home, Download, Printer, XCircle, AlertTriangle, Mail, ShoppingBag, Copy, Check } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Plus, Edit, Trash2, Search, Eye, EyeOff, FileText, Settings, Globe, Home, Download, Printer, XCircle, AlertTriangle, Mail, ShoppingBag, Copy, Check, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,12 +31,15 @@ export default function AdminPage() {
   const [employees, setEmployees] = useState([])
   const [newsletterSubscribers, setNewsletterSubscribers] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
+  const [blogPosts, setBlogPosts] = useState([])
   const [emailsCopied, setEmailsCopied] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [selectedBlogPost, setSelectedBlogPost] = useState(null)
   const [productFormOpen, setProductFormOpen] = useState(false)
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false)
   const [employeeFormOpen, setEmployeeFormOpen] = useState(false)
+  const [blogFormOpen, setBlogFormOpen] = useState(false)
   const [siteContentOpen, setSiteContentOpen] = useState(false)
   const [legalPagesOpen, setLegalPagesOpen] = useState(false)
   const [selectedContentSection, setSelectedContentSection] = useState(null)
@@ -47,6 +50,7 @@ export default function AdminPage() {
   const [cardPreviewOpen, setCardPreviewOpen] = useState(false)
   const [orderForLabel, setOrderForLabel] = useState(null)
   const [selectedProducts, setSelectedProducts] = useState([]) // Pour la sélection multiple
+  const [filterCustomizable, setFilterCustomizable] = useState(false) // Filtre pour produits personnalisables
   const { toast } = useToast()
 
   const [productForm, setProductForm] = useState({
@@ -67,6 +71,31 @@ export default function AdminPage() {
   const [employeeForm, setEmployeeForm] = useState({
     name: '',
     email: ''
+  })
+
+  const [blogForm, setBlogForm] = useState({
+    slug: '',
+    title_fr: '',
+    title_en: '',
+    excerpt_fr: '',
+    excerpt_en: '',
+    content_fr: '',
+    content_en: '',
+    category: 'bijoux-resine',
+    image: '',
+    image_alt_fr: '',
+    image_alt_en: '',
+    image_credits: '',
+    author: 'Missa',
+    author_bio_fr: '',
+    author_bio_en: '',
+    author_avatar: '',
+    published_at: new Date().toISOString().split('T')[0],
+    is_active: true,
+    is_featured: false,
+    reading_time: 5,
+    meta_description_fr: '',
+    meta_description_en: ''
   })
 
   useEffect(() => {
@@ -125,6 +154,23 @@ export default function AdminPage() {
           setOrders(ordersData.orders || [])
           const revenue = ordersData.orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
           setStats(prev => ({ ...prev, ordersCount: ordersData.orders.length, revenue }))
+        }
+      }
+      
+      if (currentView === 'dashboard' || currentView === 'blog') {
+        // L'admin doit voir TOUS les articles de blog (actifs et inactifs)
+        try {
+          const blogRes = await fetch('/api/blog?all=true&t=' + Date.now(), {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          const blogData = await blogRes.json()
+          if (blogData.success) {
+            setBlogPosts(blogData.posts || [])
+          }
+        } catch (error) {
+          console.error('Erreur chargement articles de blog:', error)
+          toast({ title: '❌ Erreur', description: 'Impossible de charger les articles de blog', variant: 'destructive' })
         }
       }
       
@@ -304,7 +350,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="flex">
-        <div className="w-64 bg-gradient-to-b from-pink-600 to-purple-700 text-white min-h-screen p-6">
+        <div className="w-64 bg-gradient-to-b from-pink-600 to-purple-700 text-white min-h-screen p-6 flex flex-col">
           <div className="mb-8">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xl mb-3">
               M
@@ -313,7 +359,7 @@ export default function AdminPage() {
             <p className="text-sm text-white/80">Administration</p>
           </div>
           
-          <nav className="space-y-2">
+          <nav className="space-y-2 flex-1">
             <button
               onClick={() => setCurrentView('dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
@@ -395,15 +441,26 @@ export default function AdminPage() {
               <FileText className="w-5 h-5" />
               Pages Légales
             </button>
+            <button
+              onClick={() => setCurrentView('blog')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                currentView === 'blog' ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
+            >
+              <BookOpen className="w-5 h-5" />
+              Blog
+            </button>
           </nav>
 
-          <button
-            onClick={() => setIsLoggedIn(false)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition mt-auto absolute bottom-6"
-          >
-            <LogOut className="w-5 h-5" />
-            Déconnexion
-          </button>
+          <div className="mt-8 mb-4">
+            <button
+              onClick={() => setIsLoggedIn(false)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition"
+            >
+              <LogOut className="w-5 h-5" />
+              Déconnexion
+            </button>
+          </div>
         </div>
 
         {/* Main Content */}
@@ -478,7 +535,12 @@ export default function AdminPage() {
           {currentView === 'products' && (
             <div>
               <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">Gestion des Produits</h1>
+                <div>
+                  <h1 className="text-3xl font-bold">Gestion des Produits</h1>
+                  <p className="text-gray-600 mt-1">
+                    {products.filter(p => p.isCustomizable).length} produit(s) personnalisable(s) sur {products.length}
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   {selectedProducts.length > 0 && (
                     <Button 
@@ -596,6 +658,22 @@ export default function AdminPage() {
                 </p>
               </div>
 
+              {/* Filtre pour produits personnalisables */}
+              <div className="mb-4 flex items-center gap-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={filterCustomizable}
+                    onCheckedChange={setFilterCustomizable}
+                  />
+                  <Label className="font-semibold">Afficher uniquement les produits personnalisables</Label>
+                </div>
+                {filterCustomizable && (
+                  <Badge variant="secondary" className="ml-2">
+                    {products.filter(p => p.isCustomizable).length} produit(s) trouvé(s)
+                  </Badge>
+                )}
+              </div>
+
               <Card>
                 <CardContent className="pt-6">
                   <Table>
@@ -604,10 +682,11 @@ export default function AdminPage() {
                         <TableHead className="w-12">
                           <input
                             type="checkbox"
-                            checked={selectedProducts.length === products.length && products.length > 0}
+                            checked={selectedProducts.length === (filterCustomizable ? products.filter(p => p.isCustomizable).length : products.length) && (filterCustomizable ? products.filter(p => p.isCustomizable).length : products.length) > 0}
                             onChange={(e) => {
+                              const filteredProducts = filterCustomizable ? products.filter(p => p.isCustomizable) : products
                               if (e.target.checked) {
-                                setSelectedProducts(products.map(p => p._id))
+                                setSelectedProducts(filteredProducts.map(p => p._id))
                               } else {
                                 setSelectedProducts([])
                               }
@@ -620,12 +699,13 @@ export default function AdminPage() {
                         <TableHead>Catégorie</TableHead>
                         <TableHead>Prix</TableHead>
                         <TableHead>Stock</TableHead>
+                        <TableHead>Personnalisable</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {products.map(product => (
+                      {(filterCustomizable ? products.filter(p => p.isCustomizable) : products).map(product => (
                         <TableRow key={product._id} className={selectedProducts.includes(product._id) ? 'bg-pink-50' : ''}>
                           <TableCell>
                             <input
@@ -703,6 +783,38 @@ export default function AdminPage() {
                                   }
                                 }}
                               />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge className={product.isCustomizable ? 'bg-purple-500' : 'bg-gray-400'}>
+                                {product.isCustomizable ? '✨ Oui' : 'Non'}
+                              </Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/products/${product._id}`, {
+                                      method: 'PUT',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ isCustomizable: !product.isCustomizable })
+                                    })
+                                    const data = await res.json()
+                                    if (data.success) {
+                                      toast({ 
+                                        title: `✅ Personnalisation ${!product.isCustomizable ? 'activée' : 'désactivée'}`,
+                                        description: `Le produit "${product.name_fr}" est maintenant ${!product.isCustomizable ? 'personnalisable' : 'non personnalisable'}`
+                                      })
+                                      loadDashboardData()
+                                    }
+                                  } catch (error) {
+                                    toast({ title: '❌ Erreur', variant: 'destructive' })
+                                  }
+                                }}
+                              >
+                                {product.isCustomizable ? 'Désactiver' : 'Activer'}
+                              </Button>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1358,6 +1470,170 @@ export default function AdminPage() {
                   </CardHeader>
                 </Card>
               </div>
+            </div>
+          )}
+
+          {/* Blog Management */}
+          {currentView === 'blog' && (
+            <div>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold">Gestion du Blog</h1>
+                <Button 
+                  onClick={() => {
+                    setSelectedBlogPost(null)
+                    setBlogForm({
+                      slug: '',
+                      title_fr: '',
+                      title_en: '',
+                      excerpt_fr: '',
+                      excerpt_en: '',
+                      content_fr: '',
+                      content_en: '',
+                      category: 'bijoux-resine',
+                      image: '',
+                      image_alt_fr: '',
+                      image_alt_en: '',
+                      image_credits: '',
+                      author: 'Missa',
+                      author_bio_fr: '',
+                      author_bio_en: '',
+                      author_avatar: '',
+                      published_at: new Date().toISOString().split('T')[0],
+                      is_active: true,
+                      is_featured: false,
+                      reading_time: 5,
+                      meta_description_fr: '',
+                      meta_description_en: ''
+                    })
+                    setBlogFormOpen(true)
+                  }}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvel Article
+                </Button>
+              </div>
+
+              <Card>
+                <CardContent className="pt-6">
+                  {blogPosts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-500 text-lg">Aucun article de blog pour le moment</p>
+                      <p className="text-gray-400 text-sm mt-2">Cliquez sur "Nouvel Article" pour créer votre premier article</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Image</TableHead>
+                          <TableHead>Titre</TableHead>
+                          <TableHead>Catégorie</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Vues</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {blogPosts.map((post) => (
+                          <TableRow key={post._id}>
+                            <TableCell>
+                              {post.image ? (
+                                <img src={post.image} alt={post.title_fr} className="w-16 h-16 object-cover rounded" />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                  <BookOpen className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium max-w-xs">
+                              <div className="truncate">{post.title_fr}</div>
+                              {post.isFeatured && (
+                                <Badge className="mt-1 bg-yellow-500">⭐ En vedette</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{post.category}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={post.isActive ? 'bg-green-500' : 'bg-gray-500'}>
+                                {post.isActive ? 'Actif' : 'Inactif'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(post.publishedAt).toLocaleDateString('fr-FR')}
+                            </TableCell>
+                            <TableCell>{post.viewCount || 0}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedBlogPost(post)
+                                    setBlogForm({
+                                      slug: post.slug,
+                                      title_fr: post.title_fr,
+                                      title_en: post.title_en,
+                                      excerpt_fr: post.excerpt_fr,
+                                      excerpt_en: post.excerpt_en,
+                                      content_fr: post.content_fr,
+                                      content_en: post.content_en,
+                                      category: post.category,
+                                      image: post.image,
+                                      image_alt_fr: post.imageAlt_fr || '',
+                                      image_alt_en: post.imageAlt_en || '',
+                                      image_credits: post.imageCredits || '',
+                                      author: post.author,
+                                      author_bio_fr: post.authorBio_fr || '',
+                                      author_bio_en: post.authorBio_en || '',
+                                      author_avatar: post.authorAvatar || '',
+                                      published_at: post.publishedAt ? new Date(post.publishedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                      is_active: post.isActive,
+                                      is_featured: post.isFeatured,
+                                      reading_time: post.readingTime || 5,
+                                      meta_description_fr: post.metaDescription_fr || '',
+                                      meta_description_en: post.metaDescription_en || ''
+                                    })
+                                    setBlogFormOpen(true)
+                                  }}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="destructive"
+                                  onClick={async () => {
+                                    if (confirm(`Êtes-vous sûr de vouloir supprimer l'article "${post.title_fr}" ?`)) {
+                                      try {
+                                        const res = await fetch(`/api/blog/${post.slug}`, {
+                                          method: 'DELETE'
+                                        })
+                                        const data = await res.json()
+                                        if (data.success) {
+                                          toast({ title: '✅ Article supprimé', description: 'L\'article a été supprimé avec succès' })
+                                          loadDashboardData()
+                                        } else {
+                                          toast({ title: '❌ Erreur', description: data.error || 'Erreur lors de la suppression', variant: 'destructive' })
+                                        }
+                                      } catch (error) {
+                                        toast({ title: '❌ Erreur', description: 'Erreur lors de la suppression', variant: 'destructive' })
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
@@ -2157,6 +2433,307 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Legal Pages Editor Dialog */}
+      {/* Blog Form Dialog */}
+      <Dialog open={blogFormOpen} onOpenChange={setBlogFormOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedBlogPost ? 'Modifier l\'article' : 'Nouvel article de blog'}</DialogTitle>
+            <DialogDescription>
+              {selectedBlogPost ? 'Modifiez les informations de l\'article' : 'Créez un nouvel article pour le blog'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="basic">Infos de base</TabsTrigger>
+                <TabsTrigger value="content">Contenu</TabsTrigger>
+                <TabsTrigger value="media">Médias</TabsTrigger>
+                <TabsTrigger value="seo">SEO & Auteur</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="basic" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Titre (FR) *</Label>
+                    <Input
+                      value={blogForm.title_fr}
+                      onChange={(e) => setBlogForm({...blogForm, title_fr: e.target.value})}
+                      placeholder="Titre en français"
+                    />
+                  </div>
+                  <div>
+                    <Label>Titre (EN)</Label>
+                    <Input
+                      value={blogForm.title_en}
+                      onChange={(e) => setBlogForm({...blogForm, title_en: e.target.value})}
+                      placeholder="Title in English"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Slug * (URL-friendly)</Label>
+                  <Input
+                    value={blogForm.slug}
+                    onChange={(e) => setBlogForm({...blogForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                    placeholder="exemple-article-blog"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Sera utilisé dans l'URL : /blog/{blogForm.slug || 'slug'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Extrait (FR)</Label>
+                    <Textarea
+                      value={blogForm.excerpt_fr}
+                      onChange={(e) => setBlogForm({...blogForm, excerpt_fr: e.target.value})}
+                      placeholder="Court résumé de l'article..."
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Extrait (EN)</Label>
+                    <Textarea
+                      value={blogForm.excerpt_en}
+                      onChange={(e) => setBlogForm({...blogForm, excerpt_en: e.target.value})}
+                      placeholder="Short article summary..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Catégorie *</Label>
+                    <Select value={blogForm.category} onValueChange={(v) => setBlogForm({...blogForm, category: v})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bijoux-resine">Bijoux Résine</SelectItem>
+                        <SelectItem value="decoration-resine">Décoration Résine</SelectItem>
+                        <SelectItem value="art-resine">Art Résine</SelectItem>
+                        <SelectItem value="meubles-resine">Meubles Résine</SelectItem>
+                        <SelectItem value="accessoires-resine">Accessoires Résine</SelectItem>
+                        <SelectItem value="tutoriels-resine">Tutoriels Résine</SelectItem>
+                        <SelectItem value="inspiration-resine">Inspiration Résine</SelectItem>
+                        <SelectItem value="news">Nouveautés</SelectItem>
+                        <SelectItem value="tutorials">Tutoriels</SelectItem>
+                        <SelectItem value="inspiration">Inspiration</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Date de publication</Label>
+                    <Input
+                      type="date"
+                      value={blogForm.published_at}
+                      onChange={(e) => setBlogForm({...blogForm, published_at: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label>Temps de lecture (min)</Label>
+                    <Input
+                      type="number"
+                      value={blogForm.reading_time}
+                      onChange={(e) => setBlogForm({...blogForm, reading_time: parseInt(e.target.value) || 5})}
+                      min={1}
+                      max={60}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={blogForm.is_active}
+                      onCheckedChange={(checked) => setBlogForm({...blogForm, is_active: checked})}
+                    />
+                    <Label>Article actif</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={blogForm.is_featured}
+                      onCheckedChange={(checked) => setBlogForm({...blogForm, is_featured: checked})}
+                    />
+                    <Label>En vedette</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="content" className="space-y-4">
+                <div>
+                  <Label>Contenu (FR) *</Label>
+                  <Textarea
+                    value={blogForm.content_fr}
+                    onChange={(e) => setBlogForm({...blogForm, content_fr: e.target.value})}
+                    placeholder="Contenu complet de l'article en français..."
+                    rows={15}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Utilisez des sauts de ligne pour les paragraphes. Les emojis sont supportés.</p>
+                </div>
+                <div>
+                  <Label>Contenu (EN)</Label>
+                  <Textarea
+                    value={blogForm.content_en}
+                    onChange={(e) => setBlogForm({...blogForm, content_en: e.target.value})}
+                    placeholder="Full article content in English..."
+                    rows={15}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="media" className="space-y-4">
+                <div>
+                  <Label>URL de l'image principale *</Label>
+                  <Input
+                    value={blogForm.image}
+                    onChange={(e) => setBlogForm({...blogForm, image: e.target.value})}
+                    placeholder="https://images.unsplash.com/photo-..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Utilisez des URLs Unsplash, Pexels ou votre CDN</p>
+                  {blogForm.image && (
+                    <div className="mt-4">
+                      <img src={blogForm.image} alt="Preview" className="w-full h-64 object-cover rounded-lg" />
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Alt texte image (FR)</Label>
+                    <Input
+                      value={blogForm.image_alt_fr}
+                      onChange={(e) => setBlogForm({...blogForm, image_alt_fr: e.target.value})}
+                      placeholder="Description de l'image"
+                    />
+                  </div>
+                  <div>
+                    <Label>Alt texte image (EN)</Label>
+                    <Input
+                      value={blogForm.image_alt_en}
+                      onChange={(e) => setBlogForm({...blogForm, image_alt_en: e.target.value})}
+                      placeholder="Image description"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Crédits photo</Label>
+                  <Input
+                    value={blogForm.image_credits}
+                    onChange={(e) => setBlogForm({...blogForm, image_credits: e.target.value})}
+                    placeholder="Photo par John Doe sur Unsplash"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="seo" className="space-y-4">
+                <div>
+                  <Label>Auteur</Label>
+                  <Input
+                    value={blogForm.author}
+                    onChange={(e) => setBlogForm({...blogForm, author: e.target.value})}
+                    placeholder="Missa"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Bio auteur (FR)</Label>
+                    <Textarea
+                      value={blogForm.author_bio_fr}
+                      onChange={(e) => setBlogForm({...blogForm, author_bio_fr: e.target.value})}
+                      placeholder="Biographie de l'auteur..."
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Bio auteur (EN)</Label>
+                    <Textarea
+                      value={blogForm.author_bio_en}
+                      onChange={(e) => setBlogForm({...blogForm, author_bio_en: e.target.value})}
+                      placeholder="Author biography..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Avatar auteur (URL)</Label>
+                  <Input
+                    value={blogForm.author_avatar}
+                    onChange={(e) => setBlogForm({...blogForm, author_avatar: e.target.value})}
+                    placeholder="https://images.unsplash.com/photo-..."
+                  />
+                  {blogForm.author_avatar && (
+                    <div className="mt-2">
+                      <img src={blogForm.author_avatar} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>Meta Description (FR)</Label>
+                  <Textarea
+                    value={blogForm.meta_description_fr}
+                    onChange={(e) => setBlogForm({...blogForm, meta_description_fr: e.target.value})}
+                    placeholder="Description pour les moteurs de recherche (150-160 caractères)"
+                    rows={2}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{blogForm.meta_description_fr.length} / 160 caractères</p>
+                </div>
+                <div>
+                  <Label>Meta Description (EN)</Label>
+                  <Textarea
+                    value={blogForm.meta_description_en}
+                    onChange={(e) => setBlogForm({...blogForm, meta_description_en: e.target.value})}
+                    placeholder="Search engine description (150-160 characters)"
+                    rows={2}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{blogForm.meta_description_en.length} / 160 caractères</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setBlogFormOpen(false)
+              setSelectedBlogPost(null)
+            }}>Annuler</Button>
+            <Button 
+              onClick={async () => {
+                if (!blogForm.title_fr || !blogForm.slug || !blogForm.content_fr) {
+                  toast({ title: '❌ Erreur', description: 'Titre, slug et contenu (FR) sont requis', variant: 'destructive' })
+                  return
+                }
+                try {
+                  const method = selectedBlogPost ? 'PUT' : 'POST'
+                  const url = selectedBlogPost ? `/api/blog/${selectedBlogPost.slug}` : '/api/blog'
+                  
+                  const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(blogForm)
+                  })
+                  const data = await res.json()
+                  
+                  if (data.success) {
+                    toast({ 
+                      title: selectedBlogPost ? '✅ Article modifié' : '✅ Article créé',
+                      description: selectedBlogPost ? 'L\'article a été modifié avec succès' : 'L\'article a été créé avec succès'
+                    })
+                    setBlogFormOpen(false)
+                    setSelectedBlogPost(null)
+                    loadDashboardData()
+                  } else {
+                    toast({ title: '❌ Erreur', description: data.error || 'Erreur lors de la sauvegarde', variant: 'destructive' })
+                  }
+                } catch (error) {
+                  toast({ title: '❌ Erreur', description: 'Erreur lors de la sauvegarde', variant: 'destructive' })
+                }
+              }}
+              className="bg-gradient-to-r from-pink-500 to-purple-600"
+            >
+              {selectedBlogPost ? 'Modifier' : 'Créer'} l'article
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={legalPagesOpen} onOpenChange={setLegalPagesOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

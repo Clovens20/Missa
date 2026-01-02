@@ -1,441 +1,711 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Upload, Download, RotateCcw, Type, Palette, Move } from 'lucide-react'
+import { Upload, X, Plus, Minus, Trash2, Move, Type, Palette, Sparkles, RotateCw, ZoomIn, ZoomOut, Lock, Unlock, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { supabase } from '@/lib/supabase'
 
 export default function PersonnalisationPage() {
-  const [image, setImage] = useState(null)
-  const [text, setText] = useState('Missa Créations')
-  const [textColor, setTextColor] = useState('#EC4899')
-  const [fontSize, setFontSize] = useState([48])
-  const [textPosition, setTextPosition] = useState([50])
-  const canvasRef = useRef(null)
-  const fileInputRef = useRef(null)
+  const router = useRouter()
   const { toast } = useToast()
+  
+  // Produit par défaut si aucun produit n'est passé
+  const defaultProduct = {
+    _id: 'custom',
+    name_fr: 'Création Personnalisée',
+    name_en: 'Custom Creation',
+    price: 39.99,
+    images: ['https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=800&q=80']
+  }
 
-  // Dessiner sur le canvas
+  const [product] = useState(defaultProduct)
+  const [productImage, setProductImage] = useState(product?.images?.[0] || 'https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=800&q=80')
+  const [baseColor, setBaseColor] = useState({ type: 'transparent', opacity: 100 })
+  const [glitters, setGlitters] = useState([])
+  const [flowers, setFlowers] = useState([])
+  const [texts, setTexts] = useState([])
+  const [selectedElement, setSelectedElement] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const canvasRef = useRef(null)
+  const [language, setLanguage] = useState('fr')
+
+  // Couleurs de base disponibles
+  const baseColors = [
+    { name: 'Transparent', value: 'transparent', hex: '#FFFFFF' },
+    { name: 'Bleu Océan', value: 'ocean', hex: '#0891B2' },
+    { name: 'Rose Bonbon', value: 'pink', hex: '#EC4899' },
+    { name: 'Violet Mystique', value: 'purple', hex: '#A855F7' },
+    { name: 'Noir Élégant', value: 'black', hex: '#1F2937' },
+    { name: 'Or Scintillant', value: 'gold', hex: '#F59E0B' },
+    { name: 'Vert Émeraude', value: 'green', hex: '#10B981' },
+    { name: 'Rouge Passion', value: 'red', hex: '#EF4444' },
+    { name: 'Bleu Ciel', value: 'sky', hex: '#0EA5E9' },
+    { name: 'Corail', value: 'coral', hex: '#FB7185' },
+  ]
+
+  // Types de paillettes
+  const glitterTypes = [
+    { name: 'Or Classique', value: 'gold-classic', color: '#FFD700', size: 'small' },
+    { name: 'Or Fin', value: 'gold-fine', color: '#FFA500', size: 'tiny' },
+    { name: 'Argent', value: 'silver', color: '#C0C0C0', size: 'small' },
+    { name: 'Holographique', value: 'holo', color: 'rainbow', size: 'medium' },
+    { name: 'Rose Gold', value: 'rose-gold', color: '#E0BFB8', size: 'small' },
+    { name: 'Cuivre', value: 'copper', color: '#B87333', size: 'small' },
+    { name: 'Platine', value: 'platinum', color: '#E5E4E2', size: 'tiny' },
+    { name: 'Arc-en-ciel', value: 'rainbow', color: 'rainbow', size: 'medium' },
+    { name: 'Multicolore', value: 'multi', color: 'multi', size: 'medium' },
+    { name: 'Cristal', value: 'crystal', color: '#F0F8FF', size: 'large' },
+  ]
+
+  // Types de fleurs séchées
+  const flowerTypes = [
+    { name: 'Lavande', value: 'lavender', emoji: '🌸', color: '#9333EA' },
+    { name: 'Rose Rouge', value: 'rose-red', emoji: '🌹', color: '#DC2626' },
+    { name: 'Rose Rose', value: 'rose-pink', emoji: '🌹', color: '#EC4899' },
+    { name: 'Marguerite', value: 'daisy', emoji: '🌼', color: '#FFF' },
+    { name: 'Tournesol Mini', value: 'sunflower', emoji: '🌻', color: '#F59E0B' },
+    { name: 'Cerisier', value: 'cherry', emoji: '🌸', color: '#FFC0CB' },
+    { name: 'Orchidée', value: 'orchid', emoji: '🌺', color: '#C084FC' },
+    { name: 'Jasmin', value: 'jasmine', emoji: '🤍', color: '#FFF' },
+    { name: 'Hibiscus', value: 'hibiscus', emoji: '🌺', color: '#EF4444' },
+    { name: 'Eucalyptus', value: 'eucalyptus', emoji: '🌿', color: '#10B981' },
+  ]
+
+  // Ajouter une paillette
+  const addGlitter = (type) => {
+    const glitterType = glitterTypes.find(g => g.value === type)
+    setGlitters([...glitters, {
+      id: Date.now(),
+      type: type,
+      x: 50,
+      y: 50,
+      opacity: 70,
+      density: 50,
+      size: glitterType.size,
+      color: glitterType.color
+    }])
+  }
+
+  // Ajouter une fleur
+  const addFlower = (type) => {
+    const flowerType = flowerTypes.find(f => f.value === type)
+    setFlowers([...flowers, {
+      id: Date.now(),
+      type: type,
+      x: 50,
+      y: 50,
+      size: 60,
+      rotation: 0,
+      opacity: 100,
+      emoji: flowerType.emoji
+    }])
+  }
+
+  // Ajouter un texte/initiale
+  const addText = () => {
+    setTexts([...texts, {
+      id: Date.now(),
+      content: 'M',
+      x: 50,
+      y: 50,
+      fontSize: 80,
+      color: '#EC4899',
+      fontFamily: 'serif',
+      fontWeight: 'bold',
+      rotation: 0,
+      opacity: 100,
+      shadow: true,
+      outline: false
+    }])
+  }
+
+  // Supprimer un élément
+  const deleteElement = (type, id) => {
+    if (type === 'glitter') setGlitters(glitters.filter(g => g.id !== id))
+    if (type === 'flower') setFlowers(flowers.filter(f => f.id !== id))
+    if (type === 'text') setTexts(texts.filter(t => t.id !== id))
+    setSelectedElement(null)
+  }
+
+  // Mettre à jour un élément
+  const updateElement = (type, id, updates) => {
+    if (type === 'glitter') {
+      setGlitters(glitters.map(g => g.id === id ? { ...g, ...updates } : g))
+    }
+    if (type === 'flower') {
+      setFlowers(flowers.map(f => f.id === id ? { ...f, ...updates } : f))
+    }
+    if (type === 'text') {
+      setTexts(texts.map(t => t.id === id ? { ...t, ...updates } : t))
+    }
+  }
+
+  // Gestion du drag & drop
+  const handleMouseDown = (e, element, type) => {
+    if (e.button !== 0) return
+    setSelectedElement({ ...element, type })
+    setIsDragging(true)
+    const rect = canvasRef.current.getBoundingClientRect()
+    const offsetX = e.clientX - rect.left - (element.x / 100) * rect.width
+    const offsetY = e.clientY - rect.top - (element.y / 100) * rect.height
+    setDragOffset({ x: offsetX, y: offsetY })
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !selectedElement) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    const newX = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100
+    const newY = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100
+    updateElement(selectedElement.type, selectedElement.id, {
+      x: Math.max(0, Math.min(100, newX)),
+      y: Math.max(0, Math.min(100, newY))
+    })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
   useEffect(() => {
-    if (!image || !canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-    
-    img.onload = () => {
-      // Ajuster la taille du canvas
-      const maxWidth = 800
-      const maxHeight = 600
-      let width = img.width
-      let height = img.height
-
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width
-        width = maxWidth
-      }
-      if (height > maxHeight) {
-        width = (width * maxHeight) / height
-        height = maxHeight
-      }
-
-      canvas.width = width
-      canvas.height = height
-
-      // Dessiner l'image
-      ctx.clearRect(0, 0, width, height)
-      ctx.drawImage(img, 0, 0, width, height)
-
-      // Ajouter le texte
-      if (text) {
-        ctx.font = `bold ${fontSize[0]}px "Inter", sans-serif`
-        ctx.fillStyle = textColor
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        
-        // Position verticale basée sur le slider (0-100% de la hauteur)
-        const yPosition = (textPosition[0] / 100) * height
-        
-        // Ajouter une ombre pour meilleure lisibilité
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
-        ctx.shadowBlur = 10
-        ctx.shadowOffsetX = 2
-        ctx.shadowOffsetY = 2
-        
-        ctx.fillText(text, width / 2, yPosition)
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-    
-    img.src = image
-  }, [image, text, textColor, fontSize, textPosition])
+  }, [isDragging, selectedElement, dragOffset])
 
-  // Charger une image
+  // Charger une image personnalisée
   const handleImageUpload = (e) => {
     const file = e.target.files[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: '⚠️ Fichier invalide', description: 'Veuillez sélectionner une image', variant: 'destructive' })
-      return
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => setProductImage(e.target.result)
+      reader.readAsDataURL(file)
     }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: '⚠️ Image trop grande', description: 'Maximum 10MB', variant: 'destructive' })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setImage(e.target.result)
-      toast({ title: '✅ Image chargée', description: 'Personnalisez votre création !' })
-    }
-    reader.readAsDataURL(file)
   }
 
-  // Télécharger l'image finale
-  const handleDownload = async () => {
-    if (!canvasRef.current || !image) {
-      toast({ title: '⚠️ Aucune image', description: 'Veuillez d\'abord charger une image', variant: 'destructive' })
-      return
+  // Sauvegarder la personnalisation
+  const saveCustomization = () => {
+    const customizationData = {
+      baseColor,
+      glitters,
+      flowers,
+      texts,
+      productImage
     }
-
-    const canvas = canvasRef.current
     
-    try {
-      // Convertir en blob
-      canvas.toBlob(async (blob) => {
-        // Télécharger localement
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `missa-creation-${Date.now()}.png`
-        link.click()
-        URL.revokeObjectURL(url)
-
-        // Sauvegarder dans Supabase (optionnel)
-        try {
-          const fileName = `custom-${Date.now()}.png`
-          const { data, error } = await supabase.storage
-            .from('creations')
-            .upload(fileName, blob, {
-              contentType: 'image/png',
-              cacheControl: '3600',
-              upsert: false
-            })
-
-          if (error) {
-            console.log('Supabase upload info:', error.message)
-          } else {
-            console.log('Sauvegardé dans Supabase:', data)
-          }
-        } catch (err) {
-          console.log('Supabase non configuré ou bucket manquant')
-        }
-
-        toast({ title: '✅ Image téléchargée !', description: 'Votre création est prête !' })
-      }, 'image/png', 1.0)
-    } catch (error) {
-      toast({ title: '❌ Erreur', description: 'Impossible de télécharger l\'image', variant: 'destructive' })
+    // Sauvegarder dans localStorage pour récupération dans le panier
+    const cartItem = {
+      id: Date.now(),
+      productId: product._id,
+      name: language === 'fr' ? product.name_fr : product.name_en,
+      price: product.price + 10, // Prix de base + personnalisation
+      image: productImage,
+      customization: customizationData
     }
+    
+    const existingCart = JSON.parse(localStorage.getItem('missaCart') || '[]')
+    existingCart.push(cartItem)
+    localStorage.setItem('missaCart', JSON.stringify(existingCart))
+    
+    toast({
+      title: language === 'fr' ? '✅ Ajouté au panier !' : '✅ Added to cart!',
+      description: language === 'fr' ? 'Votre création personnalisée a été ajoutée' : 'Your custom creation has been added'
+    })
+    
+    // Rediriger vers la page d'accueil
+    router.push('/')
   }
 
-  // Réinitialiser
-  const handleReset = () => {
-    setImage(null)
-    setText('Missa Créations')
-    setTextColor('#EC4899')
-    setFontSize([48])
-    setTextPosition([50])
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-    toast({ title: '🔄 Réinitialisé', description: 'Recommencez votre création !' })
+  const handleClose = () => {
+    router.push('/')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-                Personnalisation Missa Créations
-              </h1>
-              <p className="text-gray-600 mt-1">Créez votre bijou unique en résine</p>
-            </div>
-            <a href="/" className="text-sm text-gray-600 hover:text-pink-500 transition">
-              ← Retour à l'accueil
-            </a>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 p-4">
+      {/* Bouton retour */}
+      <button
+        onClick={handleClose}
+        className="mb-4 flex items-center gap-2 text-gray-600 hover:text-pink-500 transition"
+      >
+        <X className="w-5 h-5" />
+        <span>{language === 'fr' ? 'Retour aux produits' : 'Back to products'}</span>
+      </button>
+      
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent mb-2">
+            ✨ {language === 'fr' ? 'Studio de Personnalisation Avancé' : 'Advanced Customization Studio'}
+          </h1>
+          <p className="text-gray-600">{language === 'fr' ? 'Créez votre bijou unique avec un contrôle total sur chaque détail' : 'Create your unique jewelry with total control over every detail'}</p>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-          {/* Colonne Gauche - Aperçu */}
-          <div>
-            <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Palette className="w-6 h-6 text-pink-500" />
-                  Aperçu de votre création
-                </CardTitle>
-                <CardDescription>Voir le résultat en temps réel</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!image ? (
-                  <div className="aspect-[4/3] bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-pink-300">
-                    <Upload className="w-16 h-16 text-pink-400 mb-4" />
-                    <p className="text-gray-600 text-lg font-medium">Chargez une image pour commencer</p>
-                    <p className="text-gray-400 text-sm mt-2">Format : JPG, PNG (max 10MB)</p>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <canvas
-                      ref={canvasRef}
-                      className="w-full rounded-xl shadow-lg border-4 border-white"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Boutons d'action */}
-            <div className="mt-6 flex gap-4">
-              <Button
-                onClick={handleDownload}
-                disabled={!image}
-                size="lg"
-                className="flex-1 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white font-bold py-6 text-lg shadow-xl"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Télécharger
-              </Button>
-              <Button
-                onClick={handleReset}
-                variant="outline"
-                size="lg"
-                className="border-2 border-gray-300 hover:border-pink-500 hover:bg-pink-50 py-6"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Colonne Droite - Contrôles */}
-          <div className="space-y-6">
-            {/* Upload Image */}
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+        <div className="grid lg:grid-cols-[1fr,400px] gap-6">
+          {/* Zone de prévisualisation */}
+          <div className="space-y-4">
+            <Card className="shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-purple-500" />
-                  Charger votre image
+                  <Sparkles className="w-5 h-5 text-pink-500" />
+                  {language === 'fr' ? 'Aperçu en Temps Réel' : 'Real-time Preview'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="block w-full cursor-pointer"
+                <div 
+                  ref={canvasRef}
+                  className="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden shadow-lg cursor-crosshair"
+                  style={{ 
+                    backgroundImage: `url(${productImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
                 >
-                  <div className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 hover:bg-purple-50 transition-all">
-                    <Upload className="w-12 h-12 mx-auto mb-3 text-purple-400" />
-                    <p className="font-semibold text-gray-700">Cliquez pour choisir une image</p>
-                    <p className="text-sm text-gray-500 mt-1">ou glissez-la ici</p>
-                  </div>
-                </label>
-              </CardContent>
-            </Card>
+                  {/* Overlay de couleur de base */}
+                  {baseColor.type !== 'transparent' && (
+                    <div 
+                      className="absolute inset-0 mix-blend-overlay"
+                      style={{ 
+                        backgroundColor: baseColors.find(c => c.value === baseColor.type)?.hex,
+                        opacity: baseColor.opacity / 100
+                      }}
+                    />
+                  )}
 
-            {/* Texte */}
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Type className="w-5 h-5 text-pink-500" />
-                  Texte personnalisé
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="text" className="text-base font-semibold mb-2 block">
-                    Votre texte
-                  </Label>
-                  <Input
-                    id="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Entrez votre texte..."
-                    className="text-lg py-6 border-2 focus:border-pink-500"
-                    maxLength={50}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{text.length} / 50 caractères</p>
+                  {/* Paillettes */}
+                  {glitters.map(glitter => (
+                    <div
+                      key={glitter.id}
+                      className={`absolute cursor-move transition-transform hover:scale-110 ${selectedElement?.id === glitter.id ? 'ring-4 ring-pink-500' : ''}`}
+                      style={{
+                        left: `${glitter.x}%`,
+                        top: `${glitter.y}%`,
+                        width: '100px',
+                        height: '100px',
+                        transform: 'translate(-50%, -50%)',
+                        opacity: glitter.opacity / 100
+                      }}
+                      onMouseDown={(e) => handleMouseDown(e, glitter, 'glitter')}
+                    >
+                      {/* Effet de paillettes */}
+                      <div className="relative w-full h-full">
+                        {[...Array(glitter.density)].map((_, i) => {
+                          const size = glitter.size === 'tiny' ? 2 : glitter.size === 'small' ? 3 : glitter.size === 'medium' ? 4 : 6
+                          return (
+                            <div
+                              key={i}
+                              className="absolute rounded-full animate-pulse"
+                              style={{
+                                width: `${size}px`,
+                                height: `${size}px`,
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                                backgroundColor: glitter.color === 'rainbow' ? `hsl(${Math.random() * 360}, 100%, 50%)` : glitter.color,
+                                animationDelay: `${Math.random() * 2}s`,
+                                animationDuration: `${1 + Math.random()}s`,
+                                boxShadow: '0 0 4px rgba(255,255,255,0.8)'
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Fleurs */}
+                  {flowers.map(flower => (
+                    <div
+                      key={flower.id}
+                      className={`absolute cursor-move transition-transform hover:scale-110 ${selectedElement?.id === flower.id ? 'ring-4 ring-pink-500 rounded-full' : ''}`}
+                      style={{
+                        left: `${flower.x}%`,
+                        top: `${flower.y}%`,
+                        fontSize: `${flower.size}px`,
+                        transform: `translate(-50%, -50%) rotate(${flower.rotation}deg)`,
+                        opacity: flower.opacity / 100,
+                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+                      }}
+                      onMouseDown={(e) => handleMouseDown(e, flower, 'flower')}
+                    >
+                      {flower.emoji}
+                    </div>
+                  ))}
+
+                  {/* Textes/Initiales */}
+                  {texts.map(text => (
+                    <div
+                      key={text.id}
+                      className={`absolute cursor-move transition-transform hover:scale-105 ${selectedElement?.id === text.id ? 'ring-4 ring-pink-500' : ''}`}
+                      style={{
+                        left: `${text.x}%`,
+                        top: `${text.y}%`,
+                        fontSize: `${text.fontSize}px`,
+                        color: text.color,
+                        fontFamily: text.fontFamily,
+                        fontWeight: text.fontWeight,
+                        transform: `translate(-50%, -50%) rotate(${text.rotation}deg)`,
+                        opacity: text.opacity / 100,
+                        textShadow: text.shadow ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
+                        WebkitTextStroke: text.outline ? '2px white' : 'none'
+                      }}
+                      onMouseDown={(e) => handleMouseDown(e, text, 'text')}
+                    >
+                      {text.content}
+                    </div>
+                  ))}
+
+                  {/* Indicateur d'élément sélectionné */}
+                  {selectedElement && (
+                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+                      <p className="text-sm font-semibold text-gray-800">
+                        {selectedElement.type === 'glitter' && '✨ Paillettes'}
+                        {selectedElement.type === 'flower' && '🌸 Fleur'}
+                        {selectedElement.type === 'text' && '📝 Texte'}
+                      </p>
+                      <p className="text-xs text-gray-600">{language === 'fr' ? 'Cliquez pour modifier' : 'Click to edit'}</p>
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <Label htmlFor="color" className="text-base font-semibold mb-3 block">
-                    Couleur du texte
-                  </Label>
-                  
-                  {/* Palette de couleurs prédéfinies */}
-                  <div className="grid grid-cols-9 gap-2 mb-4">
-                    {[
-                      // Rose
-                      '#EC4899', '#F472B6', '#FB7185',
-                      // Violet
-                      '#A855F7', '#C084FC', '#8B5CF6',
-                      // Bleu
-                      '#3B82F6', '#60A5FA', '#06B6D4',
-                      // Vert
-                      '#10B981', '#34D399', '#22C55E',
-                      // Jaune/Or
-                      '#FBBF24', '#FCD34D', '#F59E0B',
-                      // Rouge
-                      '#EF4444', '#F87171', '#DC2626',
-                      // Orange
-                      '#F97316', '#FB923C', '#EA580C',
-                      // Noir/Gris
-                      '#000000', '#1F2937', '#374151',
-                      // Blanc/Clair
-                      '#FFFFFF', '#F9FAFB', '#F3F4F6'
-                    ].map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setTextColor(color)}
-                        className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 ${
-                          textColor.toUpperCase() === color.toUpperCase()
-                            ? 'border-pink-500 ring-4 ring-pink-200 scale-110'
-                            : 'border-gray-300 hover:border-gray-400'
-                        } ${color === '#FFFFFF' || color === '#F9FAFB' || color === '#F3F4F6' ? 'border-gray-400' : ''}`}
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
-                  </div>
+                <div className="mt-4 flex gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="product-image"
+                  />
+                  <label htmlFor="product-image" className="cursor-pointer">
+                    <Button variant="outline" className="w-full" asChild>
+                      <span>
+                        <Upload className="w-4 h-4 mr-2" />
+                        {language === 'fr' ? 'Changer l\'image de base' : 'Change base image'}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                  {/* Color picker personnalisé */}
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600 font-medium">Ou choisissez une couleur personnalisée :</p>
-                    <div className="flex gap-3 items-center">
-                      <input
-                        type="color"
-                        id="color"
-                        value={textColor}
-                        onChange={(e) => setTextColor(e.target.value)}
-                        className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-pink-500 transition"
-                      />
-                      <Input
-                        value={textColor}
-                        onChange={(e) => setTextColor(e.target.value)}
-                        className="flex-1 font-mono uppercase"
-                        placeholder="#EC4899"
+          {/* Panneau de contrôle */}
+          <div className="space-y-4">
+            <Card className="shadow-xl">
+              <CardContent className="pt-6">
+                <Tabs defaultValue="base" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="base">🎨 {language === 'fr' ? 'Base' : 'Base'}</TabsTrigger>
+                    <TabsTrigger value="glitter">✨ {language === 'fr' ? 'Paillettes' : 'Glitter'}</TabsTrigger>
+                    <TabsTrigger value="flowers">🌸 {language === 'fr' ? 'Fleurs' : 'Flowers'}</TabsTrigger>
+                    <TabsTrigger value="text">📝 {language === 'fr' ? 'Texte' : 'Text'}</TabsTrigger>
+                  </TabsList>
+
+                  {/* Couleur de base */}
+                  <TabsContent value="base" className="space-y-4">
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Couleur de Base' : 'Base Color'}</Label>
+                      <div className="grid grid-cols-5 gap-2 mb-4">
+                        {baseColors.map(color => (
+                          <button
+                            key={color.value}
+                            onClick={() => setBaseColor({ ...baseColor, type: color.value })}
+                            className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
+                              baseColor.type === color.value ? 'border-pink-500 ring-4 ring-pink-200' : 'border-gray-300'
+                            }`}
+                            style={{ backgroundColor: color.hex }}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                      <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {baseColor.opacity}%</Label>
+                      <Slider
+                        value={[baseColor.opacity]}
+                        onValueChange={(v) => setBaseColor({ ...baseColor, opacity: v[0] })}
+                        min={0}
+                        max={100}
+                        className="mt-2"
                       />
                     </div>
-                  </div>
-                </div>
+                  </TabsContent>
+
+                  {/* Paillettes */}
+                  <TabsContent value="glitter" className="space-y-4">
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Ajouter des Paillettes' : 'Add Glitter'}</Label>
+                      <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
+                        {glitterTypes.map(glitter => (
+                          <Button
+                            key={glitter.value}
+                            onClick={() => addGlitter(glitter.value)}
+                            variant="outline"
+                            className="justify-start"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {glitter.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {selectedElement?.type === 'glitter' && (
+                      <div className="border-t pt-4 space-y-3">
+                        <h4 className="font-bold">{language === 'fr' ? 'Éditer les Paillettes' : 'Edit Glitter'}</h4>
+                        <div>
+                          <Label>{language === 'fr' ? 'Densité' : 'Density'}: {selectedElement.density}</Label>
+                          <Slider
+                            value={[selectedElement.density]}
+                            onValueChange={(v) => updateElement('glitter', selectedElement.id, { density: v[0] })}
+                            min={10}
+                            max={100}
+                          />
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                          <Slider
+                            value={[selectedElement.opacity]}
+                            onValueChange={(v) => updateElement('glitter', selectedElement.id, { opacity: v[0] })}
+                            min={0}
+                            max={100}
+                          />
+                        </div>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => deleteElement('glitter', selectedElement.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {language === 'fr' ? 'Supprimer' : 'Delete'}
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Fleurs */}
+                  <TabsContent value="flowers" className="space-y-4">
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Ajouter une Fleur' : 'Add Flower'}</Label>
+                      <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
+                        {flowerTypes.map(flower => (
+                          <Button
+                            key={flower.value}
+                            onClick={() => addFlower(flower.value)}
+                            variant="outline"
+                            className="justify-start"
+                          >
+                            <span className="mr-2">{flower.emoji}</span>
+                            {flower.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {selectedElement?.type === 'flower' && (
+                      <div className="border-t pt-4 space-y-3">
+                        <h4 className="font-bold">{language === 'fr' ? 'Éditer la Fleur' : 'Edit Flower'} {selectedElement.emoji}</h4>
+                        <div>
+                          <Label>{language === 'fr' ? 'Taille' : 'Size'}: {selectedElement.size}px</Label>
+                          <Slider
+                            value={[selectedElement.size]}
+                            onValueChange={(v) => updateElement('flower', selectedElement.id, { size: v[0] })}
+                            min={20}
+                            max={150}
+                          />
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Rotation' : 'Rotation'}: {selectedElement.rotation}°</Label>
+                          <Slider
+                            value={[selectedElement.rotation]}
+                            onValueChange={(v) => updateElement('flower', selectedElement.id, { rotation: v[0] })}
+                            min={0}
+                            max={360}
+                          />
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                          <Slider
+                            value={[selectedElement.opacity]}
+                            onValueChange={(v) => updateElement('flower', selectedElement.id, { opacity: v[0] })}
+                            min={0}
+                            max={100}
+                          />
+                        </div>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => deleteElement('flower', selectedElement.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {language === 'fr' ? 'Supprimer' : 'Delete'}
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Texte/Initiales */}
+                  <TabsContent value="text" className="space-y-4">
+                    <Button onClick={addText} className="w-full bg-gradient-to-r from-pink-500 to-purple-600">
+                      <Plus className="w-4 h-4 mr-2" />
+                      {language === 'fr' ? 'Ajouter du Texte / Initiale' : 'Add Text / Initial'}
+                    </Button>
+
+                    {selectedElement?.type === 'text' && (
+                      <div className="border-t pt-4 space-y-3">
+                        <h4 className="font-bold">{language === 'fr' ? 'Éditer le Texte' : 'Edit Text'}</h4>
+                        <div>
+                          <Label>{language === 'fr' ? 'Texte' : 'Text'}</Label>
+                          <Input
+                            value={selectedElement.content}
+                            onChange={(e) => updateElement('text', selectedElement.id, { content: e.target.value })}
+                            maxLength={3}
+                          />
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Couleur' : 'Color'}</Label>
+                          <input
+                            type="color"
+                            value={selectedElement.color}
+                            onChange={(e) => updateElement('text', selectedElement.id, { color: e.target.value })}
+                            className="w-full h-12 rounded cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <Label className="text-base font-semibold">{language === 'fr' ? 'Taille du texte' : 'Text Size'}</Label>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-8 w-8"
+                                onClick={() => updateElement('text', selectedElement.id, { fontSize: Math.max(10, selectedElement.fontSize - 5) })}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="text-lg font-bold text-pink-500 bg-pink-50 px-4 py-1 rounded-full min-w-[80px] text-center">
+                                {selectedElement.fontSize}px
+                              </span>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-8 w-8"
+                                onClick={() => updateElement('text', selectedElement.id, { fontSize: Math.min(300, selectedElement.fontSize + 5) })}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <Slider
+                            value={[selectedElement.fontSize]}
+                            onValueChange={(v) => updateElement('text', selectedElement.id, { fontSize: v[0] })}
+                            min={10}
+                            max={300}
+                            step={1}
+                            className="cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>{language === 'fr' ? 'Très petit (10px)' : 'Very small (10px)'}</span>
+                            <span>{language === 'fr' ? 'Énorme (300px)' : 'Huge (300px)'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Rotation' : 'Rotation'}: {selectedElement.rotation}°</Label>
+                          <Slider
+                            value={[selectedElement.rotation]}
+                            onValueChange={(v) => updateElement('text', selectedElement.id, { rotation: v[0] })}
+                            min={0}
+                            max={360}
+                          />
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Police' : 'Font'}</Label>
+                          <Select
+                            value={selectedElement.fontFamily}
+                            onValueChange={(v) => updateElement('text', selectedElement.id, { fontFamily: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="serif">Serif</SelectItem>
+                              <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                              <SelectItem value="monospace">Monospace</SelectItem>
+                              <SelectItem value="cursive">Cursive</SelectItem>
+                              <SelectItem value="fantasy">Fantasy</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                          <Slider
+                            value={[selectedElement.opacity]}
+                            onValueChange={(v) => updateElement('text', selectedElement.id, { opacity: v[0] })}
+                            min={0}
+                            max={100}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={selectedElement.shadow ? "default" : "outline"}
+                            onClick={() => updateElement('text', selectedElement.id, { shadow: !selectedElement.shadow })}
+                            className="flex-1"
+                          >
+                            {language === 'fr' ? 'Ombre' : 'Shadow'}
+                          </Button>
+                          <Button
+                            variant={selectedElement.outline ? "default" : "outline"}
+                            onClick={() => updateElement('text', selectedElement.id, { outline: !selectedElement.outline })}
+                            className="flex-1"
+                          >
+                            {language === 'fr' ? 'Contour' : 'Outline'}
+                          </Button>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => deleteElement('text', selectedElement.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {language === 'fr' ? 'Supprimer' : 'Delete'}
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
-            {/* Taille du texte */}
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Move className="w-5 h-5 text-blue-500" />
-                  Ajustements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <Label className="text-base font-semibold">Taille du texte</Label>
-                    <span className="text-sm font-bold text-pink-500 bg-pink-50 px-3 py-1 rounded-full">
-                      {fontSize[0]}px
-                    </span>
-                  </div>
-                  <Slider
-                    value={fontSize}
-                    onValueChange={setFontSize}
-                    min={20}
-                    max={120}
-                    step={1}
-                    className="cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Petit</span>
-                    <span>Grand</span>
+            {/* Actions finales */}
+            <Card className="shadow-xl">
+              <CardContent className="pt-6 space-y-3">
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg">
+                  <p className="font-bold text-lg mb-2">💎 {language === 'fr' ? 'Votre Création Unique' : 'Your Unique Creation'}</p>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>✨ {glitters.length} {language === 'fr' ? 'effet(s) de paillettes' : 'glitter effect(s)'}</p>
+                    <p>🌸 {flowers.length} {language === 'fr' ? 'fleur(s) séchée(s)' : 'dried flower(s)'}</p>
+                    <p>📝 {texts.length} {language === 'fr' ? 'texte(s) / initiale(s)' : 'text(s) / initial(s)'}</p>
                   </div>
                 </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <Label className="text-base font-semibold">Position verticale</Label>
-                    <span className="text-sm font-bold text-purple-500 bg-purple-50 px-3 py-1 rounded-full">
-                      {textPosition[0]}%
-                    </span>
-                  </div>
-                  <Slider
-                    value={textPosition}
-                    onValueChange={setTextPosition}
-                    min={10}
-                    max={90}
-                    step={1}
-                    className="cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Haut</span>
-                    <span>Bas</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Conseils */}
-            <Card className="shadow-xl border-0 bg-gradient-to-br from-pink-50 to-purple-50">
-              <CardContent className="pt-6">
-                <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <span className="text-2xl">💡</span>
-                  Conseils
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-pink-500 font-bold">•</span>
-                    <span>Utilisez une image haute qualité pour un meilleur résultat</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-500 font-bold">•</span>
-                    <span>Choisissez une couleur contrastante pour la lisibilité</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 font-bold">•</span>
-                    <span>Ajustez la position pour éviter les zones importantes</span>
-                  </li>
-                </ul>
+                <Button className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-600 text-lg font-bold" onClick={saveCustomization}>
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  {language === 'fr' ? 'Ajouter au Panier' : 'Add to Cart'} - {(product?.price || 39.99) + 10}$ CAD
+                </Button>
+                <p className="text-xs text-center text-gray-500">
+                  ⏱️ {language === 'fr' ? 'Délai de fabrication: 5-7 jours ouvrables' : 'Production time: 5-7 business days'}
+                </p>
               </CardContent>
             </Card>
           </div>
         </div>
-      </main>
-
-      {/* Footer info */}
-      <footer className="container mx-auto px-4 py-8 text-center">
-        <p className="text-gray-600">
-          Créé avec ❤️ par <span className="font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Missa Créations</span>
-        </p>
-      </footer>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react'
-import { ShoppingCart, Heart, Search, Menu, X, Globe, Sparkles, Package, Truck, Plus, Minus, Trash2, Upload, Check, Calendar, User, Star, RefreshCw, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react'
+import { ShoppingCart, Heart, Search, Menu, X, Globe, Sparkles, Package, Truck, Plus, Minus, Trash2, Upload, Check, Calendar, User, Star, RefreshCw, ChevronLeft, ChevronRight, ShoppingCart as ShoppingCartIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Slider } from '@/components/ui/slider'
 import { useToast } from '@/hooks/use-toast'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -91,6 +93,16 @@ export default function App() {
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
   const [customText, setCustomText] = useState('')
+  const [customTextColor, setCustomTextColor] = useState('#EC4899')
+  const [customTextPosition, setCustomTextPosition] = useState({ x: 50, y: 30 })
+  const [customTextFontSize, setCustomTextFontSize] = useState(40)
+  const [customTextFontFamily, setCustomTextFontFamily] = useState('serif')
+  const [customTextShadow, setCustomTextShadow] = useState(true)
+  const [customTextOutline, setCustomTextOutline] = useState(false)
+  const [customTextRotation, setCustomTextRotation] = useState(0)
+  const [customTextOpacity, setCustomTextOpacity] = useState(100)
+  const [isDraggingCustomText, setIsDraggingCustomText] = useState(false)
+  const [customTextDragOffset, setCustomTextDragOffset] = useState({ x: 0, y: 0 })
   const [customImages, setCustomImages] = useState([])
   const [customization, setCustomization] = useState({
     color: 'transparent',
@@ -98,6 +110,15 @@ export default function App() {
     flower: 'lavande',
     initial: 'M'
   })
+  // États pour la personnalisation avancée
+  const [advancedBaseColor, setAdvancedBaseColor] = useState({ type: 'transparent', opacity: 100 })
+  const [advancedGlitters, setAdvancedGlitters] = useState([])
+  const [advancedFlowers, setAdvancedFlowers] = useState([])
+  const [advancedTexts, setAdvancedTexts] = useState([])
+  const [selectedElement, setSelectedElement] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const advancedCanvasRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedBlogCategory, setSelectedBlogCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -202,10 +223,16 @@ export default function App() {
       await loadProducts()
       await loadSiteContent()
       
-      // Charger les articles de blog
+      // Charger les articles de blog avec cache-busting
       try {
-        const blogRes = await fetch('/api/blog')
+        const blogRes = await fetch(`/api/blog?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
         const blogData = await blogRes.json()
+        console.log(`📝 Page d'accueil: ${blogData.posts?.length || 0} articles chargés`)
         setBlogPosts(blogData.posts || [])
       } catch (err) {
         console.error('Erreur lors du chargement du blog:', err)
@@ -234,7 +261,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('missaCart', JSON.stringify(cart)) }, [cart])
   useEffect(() => { localStorage.setItem('missaFavorites', JSON.stringify(favorites)) }, [favorites])
 
-  // Afficher le popup newsletter après 3 secondes ou au scroll (50% de la page)
+  // Afficher le popup newsletter très rapidement (1 seconde) ou au scroll (50% de la page)
   useEffect(() => {
     // Vérifier si l'utilisateur a déjà fermé le popup ou s'est abonné
     const popupClosed = localStorage.getItem('newsletterPopupClosed')
@@ -242,15 +269,15 @@ export default function App() {
     
     if (popupClosed || isSubscribed) return
 
-    // Timer pour afficher après 3 secondes
+    // Timer pour afficher après 1 seconde (très rapide)
     const timer = setTimeout(() => {
       setNewsletterPopupOpen(true)
-    }, 3000)
+    }, 1000)
 
     // Afficher au scroll (50% de la page)
     const handleScroll = () => {
       const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
-      if (scrollPercent >= 50 && !newsletterPopupOpen) {
+      if (scrollPercent >= 50) {
         setNewsletterPopupOpen(true)
         clearTimeout(timer)
       }
@@ -262,13 +289,24 @@ export default function App() {
       clearTimeout(timer)
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [newsletterPopupOpen])
+  }, []) // Exécuter une seule fois au montage
+
+  // Fonction pour calculer le prix avec personnalisation (20% du prix de base)
+  const calculateCustomizedPrice = (basePrice, hasCustomization = false) => {
+    if (!hasCustomization) return basePrice
+    return basePrice * 1.2 // Ajouter 20%
+  }
 
   const addToCart = useCallback((product, customization = null) => {
+    const basePrice = product.price
+    const finalPrice = customization ? calculateCustomizedPrice(basePrice, true) : basePrice
+    
     const cartItem = {
       id: Date.now(), productId: product._id,
       name: language === 'fr' ? product.name_fr : product.name_en,
-      price: product.price, image: product.images[0], quantity: 1, customization
+      price: basePrice, // Prix de base sauvegardé
+      finalPrice: finalPrice, // Prix final avec personnalisation
+      image: product.images[0], quantity: 1, customization
     }
     setCart(prev => [...prev, cartItem])
     toast({ title: t('addedToCart'), description: cartItem.name })
@@ -316,7 +354,7 @@ export default function App() {
   }
 
   const cartTotal = cart.reduce((sum, item) => {
-    const itemPrice = item.price + (item.customization ? 10 : 0)
+    const itemPrice = item.finalPrice || calculateCustomizedPrice(item.price, !!item.customization)
     return sum + (itemPrice * item.quantity)
   }, 0)
 
@@ -357,8 +395,177 @@ export default function App() {
       flower: 'lavande',
       initial: 'M'
     })
+    // Réinitialiser les états avancés
+    setAdvancedBaseColor({ type: 'transparent', opacity: 100 })
+    setAdvancedGlitters([])
+    setAdvancedFlowers([])
+    setAdvancedTexts([])
+    setSelectedElement(null)
     setCustomizeModalOpen(true)
   }
+
+  // Types de paillettes pour la personnalisation avancée
+  const glitterTypes = [
+    { name: 'Or Classique', value: 'gold-classic', color: '#FFD700', size: 'small' },
+    { name: 'Or Fin', value: 'gold-fine', color: '#FFA500', size: 'tiny' },
+    { name: 'Argent', value: 'silver', color: '#C0C0C0', size: 'small' },
+    { name: 'Holographique', value: 'holo', color: 'rainbow', size: 'medium' },
+    { name: 'Rose Gold', value: 'rose-gold', color: '#E0BFB8', size: 'small' },
+    { name: 'Cuivre', value: 'copper', color: '#B87333', size: 'small' },
+    { name: 'Platine', value: 'platinum', color: '#E5E4E2', size: 'tiny' },
+    { name: 'Arc-en-ciel', value: 'rainbow', color: 'rainbow', size: 'medium' },
+    { name: 'Multicolore', value: 'multi', color: 'multi', size: 'medium' },
+    { name: 'Cristal', value: 'crystal', color: '#F0F8FF', size: 'large' },
+  ]
+
+  // Types de fleurs séchées
+  const flowerTypes = [
+    { name: 'Lavande', value: 'lavender', emoji: '🌸', color: '#9333EA' },
+    { name: 'Rose Rouge', value: 'rose-red', emoji: '🌹', color: '#DC2626' },
+    { name: 'Rose Rose', value: 'rose-pink', emoji: '🌹', color: '#EC4899' },
+    { name: 'Marguerite', value: 'daisy', emoji: '🌼', color: '#FFF' },
+    { name: 'Tournesol Mini', value: 'sunflower', emoji: '🌻', color: '#F59E0B' },
+    { name: 'Cerisier', value: 'cherry', emoji: '🌸', color: '#FFC0CB' },
+    { name: 'Orchidée', value: 'orchid', emoji: '🌺', color: '#C084FC' },
+    { name: 'Jasmin', value: 'jasmine', emoji: '🤍', color: '#FFF' },
+    { name: 'Hibiscus', value: 'hibiscus', emoji: '🌺', color: '#EF4444' },
+    { name: 'Eucalyptus', value: 'eucalyptus', emoji: '🌿', color: '#10B981' },
+  ]
+
+  // Couleurs de base disponibles
+  const baseColors = [
+    { name: 'Transparent', value: 'transparent', hex: '#FFFFFF' },
+    { name: 'Bleu Océan', value: 'ocean', hex: '#0891B2' },
+    { name: 'Rose Bonbon', value: 'pink', hex: '#EC4899' },
+    { name: 'Violet Mystique', value: 'purple', hex: '#A855F7' },
+    { name: 'Noir Élégant', value: 'black', hex: '#1F2937' },
+    { name: 'Or Scintillant', value: 'gold', hex: '#F59E0B' },
+    { name: 'Vert Émeraude', value: 'green', hex: '#10B981' },
+    { name: 'Rouge Passion', value: 'red', hex: '#EF4444' },
+    { name: 'Bleu Ciel', value: 'sky', hex: '#0EA5E9' },
+    { name: 'Corail', value: 'coral', hex: '#FB7185' },
+  ]
+
+  // Ajouter une paillette
+  const addGlitter = (type) => {
+    const glitterType = glitterTypes.find(g => g.value === type)
+    setAdvancedGlitters([...advancedGlitters, {
+      id: Date.now(),
+      type: type,
+      x: 50,
+      y: 50,
+      opacity: 70,
+      density: 50,
+      size: glitterType.size,
+      color: glitterType.color
+    }])
+  }
+
+  // Ajouter une fleur
+  const addFlower = (type) => {
+    const flowerType = flowerTypes.find(f => f.value === type)
+    setAdvancedFlowers([...advancedFlowers, {
+      id: Date.now(),
+      type: type,
+      x: 50,
+      y: 50,
+      size: 60,
+      rotation: 0,
+      opacity: 100,
+      emoji: flowerType.emoji
+    }])
+  }
+
+  // Ajouter un texte/initiale
+  const addText = (isFullName = false) => {
+    const newText = {
+      id: Date.now(),
+      content: isFullName ? '' : '',
+      x: 50,
+      y: 50,
+      fontSize: isFullName ? 40 : 80,
+      color: '#EC4899',
+      fontFamily: 'serif',
+      fontWeight: 'bold',
+      rotation: 0,
+      opacity: 100,
+      shadow: true,
+      outline: false,
+      isFullName: isFullName
+    }
+    setAdvancedTexts([...advancedTexts, newText])
+    // Sélectionner automatiquement le nouvel élément pour afficher le champ d'édition
+    setSelectedElement({ ...newText, type: 'text' })
+  }
+
+  // Supprimer un élément
+  const deleteElement = (type, id) => {
+    if (type === 'glitter') setAdvancedGlitters(advancedGlitters.filter(g => g.id !== id))
+    if (type === 'flower') setAdvancedFlowers(advancedFlowers.filter(f => f.id !== id))
+    if (type === 'text') setAdvancedTexts(advancedTexts.filter(t => t.id !== id))
+    setSelectedElement(null)
+  }
+
+  // Mettre à jour un élément
+  const updateElement = (type, id, updates) => {
+    if (type === 'glitter') {
+      setAdvancedGlitters(advancedGlitters.map(g => g.id === id ? { ...g, ...updates } : g))
+    }
+    if (type === 'flower') {
+      setAdvancedFlowers(advancedFlowers.map(f => f.id === id ? { ...f, ...updates } : f))
+    }
+    if (type === 'text') {
+      setAdvancedTexts(advancedTexts.map(t => t.id === id ? { ...t, ...updates } : t))
+    }
+  }
+
+  // Gestion du drag & drop
+  const handleMouseDown = (e, element, type) => {
+    if (e.button !== 0 || !advancedCanvasRef.current) return
+    setSelectedElement({ ...element, type })
+    setIsDragging(true)
+    const rect = advancedCanvasRef.current.getBoundingClientRect()
+    const offsetX = e.clientX - rect.left - (element.x / 100) * rect.width
+    const offsetY = e.clientY - rect.top - (element.y / 100) * rect.height
+    setDragOffset({ x: offsetX, y: offsetY })
+  }
+
+  const handleMouseMove = (e) => {
+    if (isDragging && selectedElement && advancedCanvasRef.current) {
+      const rect = advancedCanvasRef.current.getBoundingClientRect()
+      const newX = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100
+      const newY = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100
+      updateElement(selectedElement.type, selectedElement.id, {
+        x: Math.max(0, Math.min(100, newX)),
+        y: Math.max(0, Math.min(100, newY))
+      })
+    }
+    if (isDraggingCustomText && advancedCanvasRef.current) {
+      const rect = advancedCanvasRef.current.getBoundingClientRect()
+      const newX = ((e.clientX - rect.left - customTextDragOffset.x) / rect.width) * 100
+      const newY = ((e.clientY - rect.top - customTextDragOffset.y) / rect.height) * 100
+      setCustomTextPosition({
+        x: Math.max(0, Math.min(100, newX)),
+        y: Math.max(0, Math.min(100, newY))
+      })
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+    setIsDraggingCustomText(false)
+  }
+
+  useEffect(() => {
+    if (isDragging || isDraggingCustomText) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isDragging, isDraggingCustomText, selectedElement, dragOffset, customTextDragOffset])
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
@@ -1392,7 +1599,7 @@ export default function App() {
                           <p className="text-sm text-gray-500">{t('quantity')}: {item.quantity}</p>
                           {item.customization && <Badge className="mt-1 bg-purple-100 text-purple-700">✨ {t('customized')}</Badge>}
                         </div>
-                        <p className="font-bold">{((item.price + (item.customization ? 10 : 0)) * item.quantity).toFixed(2)}$</p>
+                        <p className="font-bold">{((item.finalPrice || calculateCustomizedPrice(item.price, !!item.customization)) * item.quantity).toFixed(2)}$</p>
                       </div>
                     ))}
                     
@@ -1465,7 +1672,14 @@ export default function App() {
                           <img src={item.image} alt={item.name} className="w-16 h-16 sm:w-20 sm:h-20 rounded object-cover flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-sm sm:text-base truncate">{item.name}</h4>
-                            <p className="text-xs sm:text-sm text-gray-500">{item.price}$ {item.customization && '+ 10$ (personnalisé)'}</p>
+                            <p className="text-xs sm:text-sm text-gray-500">
+                              {item.price}$ 
+                              {item.customization && (
+                                <span className="text-purple-600 font-semibold">
+                                  {' '}+ {((item.finalPrice || calculateCustomizedPrice(item.price, true)) - item.price).toFixed(2)}$ ({language === 'fr' ? 'personnalisé' : 'customized'})
+                                </span>
+                              )}
+                            </p>
                             {item.customization && <Badge className="mt-1 bg-purple-100 text-purple-700 text-xs">✨ {t('customized')}</Badge>}
                             <div className="flex items-center gap-1.5 sm:gap-2 mt-2">
                               <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => updateQuantity(item.id, -1)}><Minus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
@@ -1492,122 +1706,710 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal de personnalisation avec prévisualisation en temps réel */}
+      {/* Modal de personnalisation avancée */}
       {customizeModalOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-7xl w-full my-4 max-h-[95vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-10">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">✨ {language === 'fr' ? 'Personnalisez votre création' : 'Customize your creation'}</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">✨ {language === 'fr' ? 'Studio de Personnalisation Avancé' : 'Advanced Customization Studio'}</h2>
               <button onClick={() => {
                 setCustomizeModalOpen(false)
                 setSelectedProduct(null)
+                setSelectedElement(null)
               }} className="text-gray-500 hover:text-gray-800 p-1">
                 <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="p-4 sm:p-6 grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-              {/* Aperçu en temps réel */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">{language === 'fr' ? 'Aperçu en temps réel' : 'Real-time preview'}</h3>
-                <CustomizedPreview customization={customization} product={selectedProduct} />
-                <div className="mt-4 text-center">
-                  <p className="text-2xl font-bold text-gray-800">{language === 'fr' ? selectedProduct.name_fr : selectedProduct.name_en}</p>
-                  <p className="text-3xl font-bold text-pink-600 mt-2">{selectedProduct.price}$ CAD</p>
-                  <p className="text-sm text-gray-500 mt-1">{language === 'fr' ? 'Tous les changements sont visibles en temps réel' : 'All changes are visible in real-time'}</p>
-                </div>
+            <div className="p-4 sm:p-6 grid lg:grid-cols-[1fr,400px] gap-6">
+              {/* Zone de prévisualisation */}
+              <div className="space-y-4">
+                <Card className="shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-pink-500" />
+                      {language === 'fr' ? 'Aperçu en Temps Réel' : 'Real-time Preview'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div 
+                      ref={advancedCanvasRef}
+                      className="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden shadow-lg cursor-crosshair"
+                      style={{ 
+                        backgroundImage: `url(${selectedProduct?.images?.[0] || selectedProduct?.image || 'https://images.unsplash.com/photo-1612672358776-15458bfd9869?w=800&q=80'})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }}
+                    >
+                      {/* Overlay de couleur de base */}
+                      {advancedBaseColor.type !== 'transparent' && (
+                        <div 
+                          className="absolute inset-0 mix-blend-overlay"
+                          style={{ 
+                            backgroundColor: baseColors.find(c => c.value === advancedBaseColor.type)?.hex,
+                            opacity: advancedBaseColor.opacity / 100
+                          }}
+                        />
+                      )}
+
+                      {/* Paillettes */}
+                      {advancedGlitters.map(glitter => (
+                        <div
+                          key={glitter.id}
+                          className={`absolute cursor-move transition-transform hover:scale-110 ${selectedElement?.id === glitter.id ? 'ring-4 ring-pink-500' : ''}`}
+                          style={{
+                            left: `${glitter.x}%`,
+                            top: `${glitter.y}%`,
+                            width: '100px',
+                            height: '100px',
+                            transform: 'translate(-50%, -50%)',
+                            opacity: glitter.opacity / 100
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, glitter, 'glitter')}
+                        >
+                          <div className="relative w-full h-full">
+                            {[...Array(Math.min(glitter.density, 30))].map((_, i) => {
+                              const size = glitter.size === 'tiny' ? 2 : glitter.size === 'small' ? 3 : glitter.size === 'medium' ? 4 : 6
+                              return (
+                                <div
+                                  key={i}
+                                  className="absolute rounded-full animate-pulse"
+                                  style={{
+                                    width: `${size}px`,
+                                    height: `${size}px`,
+                                    left: `${Math.random() * 100}%`,
+                                    top: `${Math.random() * 100}%`,
+                                    backgroundColor: glitter.color === 'rainbow' ? `hsl(${Math.random() * 360}, 100%, 50%)` : glitter.color,
+                                    animationDelay: `${Math.random() * 2}s`,
+                                    animationDuration: `${1 + Math.random()}s`,
+                                    boxShadow: '0 0 4px rgba(255,255,255,0.8)'
+                                  }}
+                                />
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Fleurs */}
+                      {advancedFlowers.map(flower => (
+                        <div
+                          key={flower.id}
+                          className={`absolute cursor-move transition-transform hover:scale-110 ${selectedElement?.id === flower.id ? 'ring-4 ring-pink-500 rounded-full' : ''}`}
+                          style={{
+                            left: `${flower.x}%`,
+                            top: `${flower.y}%`,
+                            fontSize: `${flower.size}px`,
+                            transform: `translate(-50%, -50%) rotate(${flower.rotation}deg)`,
+                            opacity: flower.opacity / 100,
+                            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, flower, 'flower')}
+                        >
+                          {flower.emoji}
+                        </div>
+                      ))}
+
+                      {/* Textes/Initiales */}
+                      {advancedTexts.map(text => (
+                        <div
+                          key={text.id}
+                          className={`absolute cursor-move transition-transform hover:scale-105 ${selectedElement?.id === text.id ? 'ring-4 ring-pink-500' : ''}`}
+                          style={{
+                            left: `${text.x}%`,
+                            top: `${text.y}%`,
+                            fontSize: `${text.fontSize}px`,
+                            color: text.color,
+                            fontFamily: text.fontFamily,
+                            fontWeight: text.fontWeight,
+                            transform: `translate(-50%, -50%) rotate(${text.rotation}deg)`,
+                            opacity: text.opacity / 100,
+                            textShadow: text.shadow ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
+                            WebkitTextStroke: text.outline ? '2px white' : 'none'
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, text, 'text')}
+                        >
+                          {text.content}
+                        </div>
+                      ))}
+
+                      {/* Texte personnalisé */}
+                      {customText && (
+                        <div
+                          className={`absolute cursor-move transition-transform hover:scale-105 ${isDraggingCustomText ? 'ring-4 ring-pink-500' : ''}`}
+                          style={{
+                            left: `${customTextPosition.x}%`,
+                            top: `${customTextPosition.y}%`,
+                            fontSize: `${customTextFontSize}px`,
+                            color: customTextColor,
+                            fontFamily: customTextFontFamily,
+                            fontWeight: 'bold',
+                            transform: `translate(-50%, -50%) rotate(${customTextRotation}deg)`,
+                            opacity: customTextOpacity / 100,
+                            textShadow: customTextShadow ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
+                            WebkitTextStroke: customTextOutline ? '2px white' : 'none'
+                          }}
+                          onMouseDown={(e) => {
+                            if (e.button !== 0 || !advancedCanvasRef.current) return
+                            setIsDraggingCustomText(true)
+                            const rect = advancedCanvasRef.current.getBoundingClientRect()
+                            const offsetX = e.clientX - rect.left - (customTextPosition.x / 100) * rect.width
+                            const offsetY = e.clientY - rect.top - (customTextPosition.y / 100) * rect.height
+                            setCustomTextDragOffset({ x: offsetX, y: offsetY })
+                          }}
+                        >
+                          {customText}
+                        </div>
+                      )}
+
+                      {/* Indicateur d'élément sélectionné */}
+                      {(selectedElement || (customText && isDraggingCustomText)) && (
+                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+                          <p className="text-sm font-semibold text-gray-800">
+                            {selectedElement?.type === 'glitter' && '✨ Paillettes'}
+                            {selectedElement?.type === 'flower' && '🌸 Fleur'}
+                            {selectedElement?.type === 'text' && '📝 Texte'}
+                            {customText && isDraggingCustomText && '📝 Texte Personnalisé'}
+                          </p>
+                          <p className="text-xs text-gray-600">{language === 'fr' ? 'Cliquez pour modifier' : 'Click to edit'}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Options de personnalisation */}
-              <div className="space-y-6">
-                {/* Couleur de base */}
-                <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-700">{language === 'fr' ? 'Couleur de base' : 'Base color'}</label>
-                  <div className="grid grid-cols-4 gap-3">
-                    {['transparent', 'bleu', 'rose', 'violet', 'ocean', 'noir', 'or'].map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setCustomization({...customization, color})}
-                        className={`p-2 rounded-xl border-2 transition-all ${
-                          customization.color === color ? 'border-pink-500 scale-110' : 'border-gray-200'
-                        }`}
-                      >
-                        <ColorPreview color={color} />
-                        <span className="text-xs mt-1 block capitalize">{color}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Panneau de contrôle */}
+              <div className="space-y-4">
+                <Card className="shadow-xl">
+                  <CardContent className="pt-6">
+                    <Tabs defaultValue="base" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="base">🎨 {language === 'fr' ? 'Base' : 'Base'}</TabsTrigger>
+                        <TabsTrigger value="glitter">✨ {language === 'fr' ? 'Paillettes' : 'Glitter'}</TabsTrigger>
+                        <TabsTrigger value="flowers">🌸 {language === 'fr' ? 'Fleurs' : 'Flowers'}</TabsTrigger>
+                        <TabsTrigger value="text">📝 {language === 'fr' ? 'Texte' : 'Text'}</TabsTrigger>
+                      </TabsList>
 
-                {/* Paillettes */}
-                <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-700">{language === 'fr' ? 'Paillettes' : 'Glitter'}</label>
-                  <select 
-                    value={customization.glitter}
-                    onChange={(e) => setCustomization({...customization, glitter: e.target.value})}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none"
-                  >
-                    <option value="none">{language === 'fr' ? 'Sans paillettes' : 'No glitter'}</option>
-                    <option value="or">{language === 'fr' ? 'Paillettes dorées' : 'Gold glitter'}</option>
-                    <option value="argent">{language === 'fr' ? 'Paillettes argentées' : 'Silver glitter'}</option>
-                  </select>
-                  </div>
-                  
-                {/* Fleur séchée */}
-                <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-700">{language === 'fr' ? 'Fleur séchée' : 'Dried flower'}</label>
-                  <select 
-                    value={customization.flower}
-                    onChange={(e) => setCustomization({...customization, flower: e.target.value})}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none"
-                  >
-                    <option value="none">{language === 'fr' ? 'Sans fleur' : 'No flower'}</option>
-                    <option value="lavande">{language === 'fr' ? 'Lavande 🌸' : 'Lavender 🌸'}</option>
-                    <option value="rose">{language === 'fr' ? 'Rose 🌹' : 'Rose 🌹'}</option>
-                    <option value="marguerite">{language === 'fr' ? 'Marguerite 🌼' : 'Daisy 🌼'}</option>
-                  </select>
+                      {/* Couleur de base */}
+                      <TabsContent value="base" className="space-y-4">
+                        <div>
+                          <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Couleur de Base' : 'Base Color'}</Label>
+                          <div className="grid grid-cols-5 gap-2 mb-4">
+                            {baseColors.map(color => (
+                              <button
+                                key={color.value}
+                                onClick={() => setAdvancedBaseColor({ ...advancedBaseColor, type: color.value })}
+                                className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
+                                  advancedBaseColor.type === color.value ? 'border-pink-500 ring-4 ring-pink-200' : 'border-gray-300'
+                                }`}
+                                style={{ backgroundColor: color.hex }}
+                                title={color.name}
+                              />
+                            ))}
+                          </div>
+                          <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {advancedBaseColor.opacity}%</Label>
+                          <Slider
+                            value={[advancedBaseColor.opacity]}
+                            onValueChange={(v) => setAdvancedBaseColor({ ...advancedBaseColor, opacity: v[0] })}
+                            min={0}
+                            max={100}
+                            className="mt-2"
+                          />
+                        </div>
+                      </TabsContent>
+
+                      {/* Paillettes */}
+                      <TabsContent value="glitter" className="space-y-4">
+                        <div>
+                          <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Ajouter des Paillettes' : 'Add Glitter'}</Label>
+                          <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
+                            {glitterTypes.map(glitter => (
+                              <Button
+                                key={glitter.value}
+                                onClick={() => addGlitter(glitter.value)}
+                                variant="outline"
+                                className="justify-start"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {glitter.name}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
 
-                {/* Initiale personnalisée */}
-                <div>
-                  <label className="block text-sm font-semibold mb-3 text-gray-700">{language === 'fr' ? 'Initiale personnalisée' : 'Custom initial'}</label>
-                  <input
-                    type="text"
-                    maxLength="1"
-                    value={customization.initial}
-                    onChange={(e) => setCustomization({...customization, initial: e.target.value.toUpperCase()})}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none text-center text-2xl font-bold"
-                    placeholder="M"
-                  />
+                        {selectedElement?.type === 'glitter' && (
+                          <div className="border-t pt-4 space-y-3">
+                            <h4 className="font-bold">{language === 'fr' ? 'Éditer les Paillettes' : 'Edit Glitter'}</h4>
+                            <div>
+                              <Label>{language === 'fr' ? 'Densité' : 'Density'}: {selectedElement.density}</Label>
+                              <Slider
+                                value={[selectedElement.density]}
+                                onValueChange={(v) => updateElement('glitter', selectedElement.id, { density: v[0] })}
+                                min={10}
+                                max={100}
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                              <Slider
+                                value={[selectedElement.opacity]}
+                                onValueChange={(v) => updateElement('glitter', selectedElement.id, { opacity: v[0] })}
+                                min={0}
+                                max={100}
+                              />
+                            </div>
+                            <Button
+                              variant="destructive"
+                              className="w-full"
+                              onClick={() => deleteElement('glitter', selectedElement.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              {language === 'fr' ? 'Supprimer' : 'Delete'}
+                            </Button>
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* Fleurs */}
+                      <TabsContent value="flowers" className="space-y-4">
+                        <div>
+                          <Label className="text-base font-semibold mb-3 block">{language === 'fr' ? 'Ajouter une Fleur' : 'Add Flower'}</Label>
+                          <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
+                            {flowerTypes.map(flower => (
+                              <Button
+                                key={flower.value}
+                                onClick={() => addFlower(flower.value)}
+                                variant="outline"
+                                className="justify-start"
+                              >
+                                <span className="mr-2">{flower.emoji}</span>
+                                {flower.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {selectedElement?.type === 'flower' && (
+                          <div className="border-t pt-4 space-y-3">
+                            <h4 className="font-bold">{language === 'fr' ? 'Éditer la Fleur' : 'Edit Flower'} {selectedElement.emoji}</h4>
+                            <div>
+                              <Label>{language === 'fr' ? 'Taille' : 'Size'}: {selectedElement.size}px</Label>
+                              <Slider
+                                value={[selectedElement.size]}
+                                onValueChange={(v) => updateElement('flower', selectedElement.id, { size: v[0] })}
+                                min={20}
+                                max={150}
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Rotation' : 'Rotation'}: {selectedElement.rotation}°</Label>
+                              <Slider
+                                value={[selectedElement.rotation]}
+                                onValueChange={(v) => updateElement('flower', selectedElement.id, { rotation: v[0] })}
+                                min={0}
+                                max={360}
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                              <Slider
+                                value={[selectedElement.opacity]}
+                                onValueChange={(v) => updateElement('flower', selectedElement.id, { opacity: v[0] })}
+                                min={0}
+                                max={100}
+                              />
+                            </div>
+                            <Button
+                              variant="destructive"
+                              className="w-full"
+                              onClick={() => deleteElement('flower', selectedElement.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              {language === 'fr' ? 'Supprimer' : 'Delete'}
+                            </Button>
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* Texte/Initiales */}
+                      <TabsContent value="text" className="space-y-4">
+                        {/* Champ de texte personnalisé (optionnel) */}
+                        <div className="border-b pb-4 mb-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-base font-semibold">{language === 'fr' ? 'Texte personnalisé (optionnel)' : 'Custom text (optional)'}</Label>
+                            {customText && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  setCustomText('')
+                                  setCustomTextPosition({ x: 50, y: 30 })
+                                  setCustomTextFontSize(40)
+                                  setCustomTextColor('#EC4899')
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {language === 'fr' ? 'Supprimer' : 'Delete'}
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea 
+                            placeholder={language === 'fr' ? 'Entrez votre texte personnalisé ici...' : 'Enter your custom text here...'} 
+                            value={customText} 
+                            onChange={(e) => setCustomText(e.target.value)} 
+                            rows={3}
+                            className="resize-none"
+                          />
+                          <p className="text-xs text-gray-500">{customText.length} / 200 {language === 'fr' ? 'caractères' : 'characters'}</p>
+                          
+                          {customText && (
+                            <div className="space-y-3 pt-3 border-t">
+                              <div>
+                                <Label>{language === 'fr' ? 'Couleur du texte' : 'Text color'}</Label>
+                                <div className="flex gap-2 items-center mt-1">
+                                  <input
+                                    type="color"
+                                    value={customTextColor}
+                                    onChange={(e) => setCustomTextColor(e.target.value)}
+                                    className="w-12 h-12 rounded cursor-pointer border-2 border-gray-300"
+                                  />
+                                  <Input
+                                    value={customTextColor}
+                                    onChange={(e) => setCustomTextColor(e.target.value)}
+                                    className="flex-1 font-mono uppercase"
+                                    placeholder="#EC4899"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <Label>{language === 'fr' ? 'Taille' : 'Size'}: {customTextFontSize}px</Label>
+                                </div>
+                                <Slider
+                                  value={[customTextFontSize]}
+                                  onValueChange={(v) => setCustomTextFontSize(v[0])}
+                                  min={10}
+                                  max={100}
+                                  step={1}
+                                />
+                              </div>
+                              <div>
+                                <Label>{language === 'fr' ? 'Police' : 'Font'}</Label>
+                                <Select
+                                  value={customTextFontFamily}
+                                  onValueChange={setCustomTextFontFamily}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="serif">Serif</SelectItem>
+                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                    <SelectItem value="monospace">Monospace</SelectItem>
+                                    <SelectItem value="cursive">Cursive</SelectItem>
+                                    <SelectItem value="fantasy">Fantasy</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label>{language === 'fr' ? 'Rotation' : 'Rotation'}: {customTextRotation}°</Label>
+                                <Slider
+                                  value={[customTextRotation]}
+                                  onValueChange={(v) => setCustomTextRotation(v[0])}
+                                  min={0}
+                                  max={360}
+                                />
+                              </div>
+                              <div>
+                                <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {customTextOpacity}%</Label>
+                                <Slider
+                                  value={[customTextOpacity]}
+                                  onValueChange={(v) => setCustomTextOpacity(v[0])}
+                                  min={0}
+                                  max={100}
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant={customTextShadow ? "default" : "outline"}
+                                  onClick={() => setCustomTextShadow(!customTextShadow)}
+                                  className="flex-1"
+                                  size="sm"
+                                >
+                                  {language === 'fr' ? 'Ombre' : 'Shadow'}
+                                </Button>
+                                <Button
+                                  variant={customTextOutline ? "default" : "outline"}
+                                  onClick={() => setCustomTextOutline(!customTextOutline)}
+                                  className="flex-1"
+                                  size="sm"
+                                >
+                                  {language === 'fr' ? 'Contour' : 'Outline'}
+                                </Button>
+                              </div>
+                              <p className="text-xs text-gray-500 italic">{language === 'fr' ? '💡 Cliquez et glissez le texte dans l\'aperçu pour le repositionner' : '💡 Click and drag the text in the preview to reposition it'}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button onClick={() => addText(false)} className="bg-gradient-to-r from-pink-500 to-purple-600">
+                            <Plus className="w-4 h-4 mr-2" />
+                            {language === 'fr' ? 'Initiale' : 'Initial'}
+                          </Button>
+                          <Button onClick={() => addText(true)} variant="outline" className="border-pink-500 text-pink-500 hover:bg-pink-50">
+                            <Plus className="w-4 h-4 mr-2" />
+                            {language === 'fr' ? 'Nom Complet' : 'Full Name'}
+                          </Button>
+                        </div>
+
+                        {/* Afficher le champ d'édition pour le dernier élément texte ajouté si aucun n'est sélectionné */}
+                        {!selectedElement?.type && advancedTexts.length > 0 && (
+                          <div className="border-t pt-4 space-y-3 bg-pink-50 p-4 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-bold text-sm">{language === 'fr' ? 'Éditer la dernière initiale/nom ajouté' : 'Edit last added initial/name'}</h4>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const lastText = advancedTexts[advancedTexts.length - 1]
+                                  setSelectedElement({ ...lastText, type: 'text' })
+                                }}
+                              >
+                                {language === 'fr' ? 'Voir tous les détails' : 'View all details'}
+                              </Button>
+                            </div>
+                            <div>
+                              <Label className="mb-2 block">{language === 'fr' ? advancedTexts[advancedTexts.length - 1].isFullName ? 'Nom complet' : 'Initiale (2 lettres maximum)' : advancedTexts[advancedTexts.length - 1].isFullName ? 'Full Name' : 'Initial (2 letters max)'}</Label>
+                              <Input
+                                value={advancedTexts[advancedTexts.length - 1].content}
+                                onChange={(e) => {
+                                  const lastText = advancedTexts[advancedTexts.length - 1]
+                                  const value = lastText.isFullName ? e.target.value : e.target.value.toUpperCase().slice(0, 2)
+                                  updateElement('text', lastText.id, { content: value })
+                                }}
+                                maxLength={advancedTexts[advancedTexts.length - 1].isFullName ? 50 : 2}
+                                placeholder={advancedTexts[advancedTexts.length - 1].isFullName ? (language === 'fr' ? 'Entrez le nom complet...' : 'Enter full name...') : (language === 'fr' ? 'Entrez 2 lettres (ex: MJ, AB)' : 'Enter 2 letters (ex: MJ, AB)')}
+                                className={advancedTexts[advancedTexts.length - 1].isFullName ? '' : 'text-center text-2xl font-bold'}
+                                autoFocus
+                              />
+                              {advancedTexts[advancedTexts.length - 1].isFullName ? (
+                                <p className="text-xs text-gray-500 mt-1">{advancedTexts[advancedTexts.length - 1].content.length} / 50 {language === 'fr' ? 'caractères' : 'characters'}</p>
+                              ) : (
+                                <div className="mt-1">
+                                  <p className="text-xs text-gray-500">{advancedTexts[advancedTexts.length - 1].content.length} / 2 {language === 'fr' ? 'lettres' : 'letters'}</p>
+                                  {advancedTexts[advancedTexts.length - 1].content.length === 0 && (
+                                    <p className="text-xs text-pink-500 italic mt-1">{language === 'fr' ? '💡 Vous pouvez entrer jusqu\'à 2 lettres (ex: MJ, AB, XY)' : '💡 You can enter up to 2 letters (ex: MJ, AB, XY)'}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedElement?.type === 'text' && (
+                          <div className="border-t pt-4 space-y-3">
+                            <h4 className="font-bold">{language === 'fr' ? selectedElement.isFullName ? 'Éditer le Nom Complet' : 'Éditer l\'Initiale' : selectedElement.isFullName ? 'Edit Full Name' : 'Edit Initial'}</h4>
+                            <div>
+                              <Label className="mb-2 block">{language === 'fr' ? selectedElement.isFullName ? 'Nom complet' : 'Initiale (2 lettres maximum)' : selectedElement.isFullName ? 'Full Name' : 'Initial (2 letters max)'}</Label>
+                              <Input
+                                value={selectedElement.content}
+                                onChange={(e) => {
+                                  const value = selectedElement.isFullName ? e.target.value : e.target.value.toUpperCase().slice(0, 2)
+                                  updateElement('text', selectedElement.id, { content: value })
+                                }}
+                                maxLength={selectedElement.isFullName ? 50 : 2}
+                                placeholder={selectedElement.isFullName ? (language === 'fr' ? 'Entrez le nom complet...' : 'Enter full name...') : (language === 'fr' ? 'Entrez 2 lettres (ex: MJ, AB)' : 'Enter 2 letters (ex: MJ, AB)')}
+                                className={selectedElement.isFullName ? '' : 'text-center text-2xl font-bold'}
+                              />
+                              {selectedElement.isFullName ? (
+                                <p className="text-xs text-gray-500 mt-1">{selectedElement.content.length} / 50 {language === 'fr' ? 'caractères' : 'characters'}</p>
+                              ) : (
+                                <div className="mt-1">
+                                  <p className="text-xs text-gray-500">{selectedElement.content.length} / 2 {language === 'fr' ? 'lettres' : 'letters'}</p>
+                                  {selectedElement.content.length === 0 && (
+                                    <p className="text-xs text-pink-500 italic mt-1">{language === 'fr' ? '💡 Vous pouvez entrer jusqu\'à 2 lettres (ex: MJ, AB, XY)' : '💡 You can enter up to 2 letters (ex: MJ, AB, XY)'}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Couleur' : 'Color'}</Label>
+                              <input
+                                type="color"
+                                value={selectedElement.color}
+                                onChange={(e) => updateElement('text', selectedElement.id, { color: e.target.value })}
+                                className="w-full h-12 rounded cursor-pointer"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex justify-between items-center mb-3">
+                                <Label className="text-base font-semibold">{language === 'fr' ? 'Taille du texte' : 'Text Size'}</Label>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-8 w-8"
+                                    onClick={() => updateElement('text', selectedElement.id, { fontSize: Math.max(10, selectedElement.fontSize - 5) })}
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="text-lg font-bold text-pink-500 bg-pink-50 px-4 py-1 rounded-full min-w-[80px] text-center">
+                                    {selectedElement.fontSize}px
+                                  </span>
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-8 w-8"
+                                    onClick={() => updateElement('text', selectedElement.id, { fontSize: Math.min(300, selectedElement.fontSize + 5) })}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <Slider
+                                value={[selectedElement.fontSize]}
+                                onValueChange={(v) => updateElement('text', selectedElement.id, { fontSize: v[0] })}
+                                min={10}
+                                max={300}
+                                step={1}
+                                className="cursor-pointer"
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Rotation' : 'Rotation'}: {selectedElement.rotation}°</Label>
+                              <Slider
+                                value={[selectedElement.rotation]}
+                                onValueChange={(v) => updateElement('text', selectedElement.id, { rotation: v[0] })}
+                                min={0}
+                                max={360}
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Police' : 'Font'}</Label>
+                              <Select
+                                value={selectedElement.fontFamily}
+                                onValueChange={(v) => updateElement('text', selectedElement.id, { fontFamily: v })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="serif">Serif</SelectItem>
+                                  <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                  <SelectItem value="monospace">Monospace</SelectItem>
+                                  <SelectItem value="cursive">Cursive</SelectItem>
+                                  <SelectItem value="fantasy">Fantasy</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>{language === 'fr' ? 'Opacité' : 'Opacity'}: {selectedElement.opacity}%</Label>
+                              <Slider
+                                value={[selectedElement.opacity]}
+                                onValueChange={(v) => updateElement('text', selectedElement.id, { opacity: v[0] })}
+                                min={0}
+                                max={100}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant={selectedElement.shadow ? "default" : "outline"}
+                                onClick={() => updateElement('text', selectedElement.id, { shadow: !selectedElement.shadow })}
+                                className="flex-1"
+                              >
+                                {language === 'fr' ? 'Ombre' : 'Shadow'}
+                              </Button>
+                              <Button
+                                variant={selectedElement.outline ? "default" : "outline"}
+                                onClick={() => updateElement('text', selectedElement.id, { outline: !selectedElement.outline })}
+                                className="flex-1"
+                              >
+                                {language === 'fr' ? 'Contour' : 'Outline'}
+                              </Button>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              className="w-full"
+                              onClick={() => deleteElement('text', selectedElement.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              {language === 'fr' ? 'Supprimer' : 'Delete'}
+                            </Button>
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                {/* Actions finales */}
+                <Card className="shadow-xl">
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg">
+                      <p className="font-bold text-lg mb-2">💎 {language === 'fr' ? 'Votre Création Unique' : 'Your Unique Creation'}</p>
+                      <div className="space-y-1 text-sm text-gray-600 mb-3">
+                        <p>✨ {advancedGlitters.length} {language === 'fr' ? 'effet(s) de paillettes' : 'glitter effect(s)'}</p>
+                        <p>🌸 {advancedFlowers.length} {language === 'fr' ? 'fleur(s) séchée(s)' : 'dried flower(s)'}</p>
+                        <p>📝 {advancedTexts.length} {language === 'fr' ? 'texte(s) / initiale(s)' : 'text(s) / initial(s)'}</p>
+                      </div>
+                      <div className="border-t pt-3 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>{language === 'fr' ? 'Prix de base' : 'Base price'}:</span>
+                          <span>{(selectedProduct?.price || 39.99).toFixed(2)}$</span>
+                        </div>
+                        <div className="flex justify-between text-purple-600 font-semibold">
+                          <span>+ {language === 'fr' ? 'Personnalisation (20%)' : 'Customization (20%)'}:</span>
+                          <span>+ {((selectedProduct?.price || 39.99) * 0.2).toFixed(2)}$</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-lg border-t pt-2 text-pink-600">
+                          <span>{language === 'fr' ? 'Total' : 'Total'}:</span>
+                          <span>{calculateCustomizedPrice(selectedProduct?.price || 39.99, true).toFixed(2)}$ CAD</span>
+                        </div>
+                      </div>
                     </div>
-
-                {/* Texte personnalisé (optionnel) */}
-                <div>
-                  <Label>{t('customText')} ({language === 'fr' ? 'optionnel' : 'optional'})</Label>
-                  <Textarea placeholder={t('enterText')} value={customText} onChange={(e) => setCustomText(e.target.value)} rows={3} />
-                  <p className="text-xs text-gray-500 mt-1">{customText.length} / 200 {t('characters')}</p>
-                </div>
-
-                {/* Prix et ajout au panier */}
-                <div className="pt-4">
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <div className="flex justify-between mb-2"><span>{t('basePrice')}</span><span>{selectedProduct.price}$</span></div>
-                  <div className="flex justify-between mb-2 text-purple-600"><span>+ {t('customization')}</span><span>10.00$</span></div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2"><span>{t('total')}</span><span className="text-pink-500">{(selectedProduct.price + 10).toFixed(2)}$ CAD</span></div>
-                  </div>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-2xl transition-all transform hover:scale-105"
-                    onClick={confirmCustomization}
-                  >
-                    {language === 'fr' ? 'Ajouter au panier' : 'Add to cart'} - {(selectedProduct.price + 10).toFixed(2)}$ CAD
-                  </Button>
-                  <p className="text-sm text-gray-500 text-center mt-3">⏱️ {language === 'fr' ? 'Délai de fabrication: 5-7 jours' : 'Production time: 5-7 days'}</p>
-                </div>
-              </div>
-                </div>
+                    <Button 
+                      className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-600 text-lg font-bold" 
+                      onClick={() => {
+                        addToCart(selectedProduct, {
+                          baseColor: advancedBaseColor,
+                          glitters: advancedGlitters,
+                          flowers: advancedFlowers,
+                          texts: advancedTexts,
+                          customText: customText,
+                          customTextColor: customTextColor,
+                          customTextPosition: customTextPosition,
+                          customTextFontSize: customTextFontSize,
+                          customTextFontFamily: customTextFontFamily,
+                          customTextShadow: customTextShadow,
+                          customTextOutline: customTextOutline,
+                          customTextRotation: customTextRotation,
+                          customTextOpacity: customTextOpacity,
+                          images: customImages.map(img => img.preview)
+                        })
+                        setCustomizeModalOpen(false)
+                        setSelectedProduct(null)
+                        setSelectedElement(null)
+                        toast({
+                          title: language === 'fr' ? '✅ Produit ajouté au panier' : '✅ Product added to cart',
+                          description: language === 'fr' ? 'Votre création personnalisée a été ajoutée avec succès !' : 'Your customized creation has been added successfully!'
+                        })
+                      }}
+                    >
+                      <ShoppingCartIcon className="w-5 h-5 mr-2" />
+                      {language === 'fr' ? 'Ajouter au Panier' : 'Add to Cart'} - {calculateCustomizedPrice(selectedProduct?.price || 39.99, true).toFixed(2)}$ CAD
+                    </Button>
+                    <p className="text-xs text-center text-gray-500">
+                      ⏱️ {language === 'fr' ? 'Délai de fabrication: 5-7 jours ouvrables' : 'Production time: 5-7 business days'}
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
       <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
         <DialogContent className="max-w-4xl">
@@ -2367,6 +3169,16 @@ export default function App() {
                         </>
                       )}
                     </Button>
+                    
+                    {/* Bouton "Plus tard" */}
+                    <Button
+                      type="button"
+                      onClick={handleCloseNewsletterPopup}
+                      variant="outline"
+                      className="w-full h-12 bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white text-base font-semibold rounded-xl transition-all duration-200 mt-2"
+                    >
+                      {language === 'fr' ? 'Plus tard' : 'Later'}
+                    </Button>
                   </div>
                 </div>
 
@@ -2391,15 +3203,6 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-
-                {/* Lien "Plus tard" */}
-                <button
-                  type="button"
-                  onClick={handleCloseNewsletterPopup}
-                  className="block mx-auto text-white/70 hover:text-white text-sm underline transition-colors"
-                >
-                  {language === 'fr' ? 'Peut-être plus tard' : 'Maybe later'}
-                </button>
               </form>
             </div>
           </div>
