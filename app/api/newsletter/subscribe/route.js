@@ -415,7 +415,9 @@ export async function POST(request) {
       message: isNewSubscriber 
         ? 'Abonnement réussi ! Vérifiez votre email pour votre message de bienvenue.' 
         : 'Abonnement réactivé ! Vérifiez votre email pour votre message de bienvenue.',
-      subscriberId 
+      subscriberId,
+      promoCode: promoCode || null, // Retourner le code promo si généré
+      isNewSubscriber: isNewSubscriber
     })
   } catch (error) {
     console.error('Newsletter subscription error:', error)

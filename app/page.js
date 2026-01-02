@@ -149,6 +149,8 @@ export default function App() {
   const [popupNewsletterLoading, setPopupNewsletterLoading] = useState(false)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
   const [headerSearchQuery, setHeaderSearchQuery] = useState('')
+  const [promoCodeModalOpen, setPromoCodeModalOpen] = useState(false)
+  const [receivedPromoCode, setReceivedPromoCode] = useState('')
 
   // Cache pour éviter les requêtes répétées
   // Fonction pour charger les produits (réutilisable)
@@ -254,8 +256,13 @@ export default function App() {
   useEffect(() => {
     const savedCart = localStorage.getItem('missaCart')
     const savedFavorites = localStorage.getItem('missaFavorites')
+    const savedPromoCode = localStorage.getItem('newsletterPromoCode')
     if (savedCart) setCart(JSON.parse(savedCart))
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
+    // Si l'utilisateur a un code promo sauvegardé, le pré-remplir
+    if (savedPromoCode && !promoCode) {
+      setPromoCode(savedPromoCode)
+    }
   }, [])
 
   useEffect(() => { localStorage.setItem('missaCart', JSON.stringify(cart)) }, [cart])
@@ -654,21 +661,52 @@ export default function App() {
       })
       const data = await res.json()
       if (data.success) {
-        toast({ 
-          title: language === 'fr' ? '✅ Abonnement réussi !' : '✅ Subscription successful!',
-          description: language === 'fr' 
-            ? 'Vérifiez votre email pour votre message de bienvenue !' 
-            : 'Check your email for your welcome message!'
-        })
+        // Afficher le code promo si c'est un nouvel abonné
+        if (data.isNewSubscriber && data.promoCode) {
+          // Sauvegarder le code promo
+          setReceivedPromoCode(data.promoCode)
+          localStorage.setItem('newsletterPromoCode', data.promoCode)
+          
+          // Fermer le popup newsletter
+          if (isPopup) {
+            setPopupNewsletterEmail('')
+            setPopupNewsletterName('')
+            setNewsletterPopupOpen(false)
+            localStorage.setItem('newsletterSubscribed', 'true')
+          } else {
+            setNewsletterEmail('')
+            setNewsletterName('')
+          }
+          
+          // Afficher le modal avec le code promo
+          setTimeout(() => {
+            setPromoCodeModalOpen(true)
+          }, 500)
+        } else {
+          toast({ 
+            title: language === 'fr' ? '✅ Abonnement réussi !' : '✅ Subscription successful!',
+            description: language === 'fr' 
+              ? 'Vérifiez votre email pour votre message de bienvenue !' 
+              : 'Check your email for your welcome message!'
+          })
+        }
         
         if (isPopup) {
           setPopupNewsletterEmail('')
           setPopupNewsletterName('')
           setNewsletterPopupOpen(false)
           localStorage.setItem('newsletterSubscribed', 'true')
+          // Sauvegarder le code promo dans localStorage pour référence
+          if (data.promoCode) {
+            localStorage.setItem('newsletterPromoCode', data.promoCode)
+          }
         } else {
           setNewsletterEmail('')
           setNewsletterName('')
+          // Sauvegarder le code promo dans localStorage pour référence
+          if (data.promoCode) {
+            localStorage.setItem('newsletterPromoCode', data.promoCode)
+          }
         }
       } else {
         toast({ 
@@ -708,23 +746,49 @@ export default function App() {
 
   // Filtrer les produits avec useMemo pour éviter les recalculs inutiles
   const filteredProducts = useMemo(() => {
-    return products
-    .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
-      .filter(p => (language === 'fr' ? p.name_fr : p.name_en).toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
-    .sort((a, b) => sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : 0)
+    if (!products || products.length === 0) return []
+    
+    let filtered = products
+    
+    // Filtrer par catégorie (si 'all', on prend tous les produits)
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(p => p.category === selectedCategory)
+    }
+    
+    // Filtrer par recherche
+    if (debouncedSearchQuery && debouncedSearchQuery.trim() !== '') {
+      const searchLower = debouncedSearchQuery.toLowerCase()
+      filtered = filtered.filter(p => {
+        const name = (language === 'fr' ? p.name_fr : p.name_en) || ''
+        const desc = (language === 'fr' ? p.description_fr : p.description_en) || ''
+        return name.toLowerCase().includes(searchLower) || desc.toLowerCase().includes(searchLower)
+      })
+    }
+    
+    // Trier
+    if (sortBy === 'price-asc') {
+      filtered = filtered.sort((a, b) => (a.price || 0) - (b.price || 0))
+    } else if (sortBy === 'price-desc') {
+      filtered = filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
+    }
+    
+    return filtered
   }, [products, selectedCategory, debouncedSearchQuery, sortBy, language])
 
   // Grouper les produits par catégorie avec useMemo
+  // Utiliser tous les produits pour le groupement, pas seulement les filtrés
   const productsByCategory = useMemo(() => {
-    return filteredProducts.reduce((acc, product) => {
-      const category = product.category
+    if (!products || products.length === 0) return {}
+    
+    return products.reduce((acc, product) => {
+      const category = product.category || 'other'
       if (!acc[category]) {
         acc[category] = []
       }
       acc[category].push(product)
       return acc
     }, {})
-  }, [filteredProducts])
+  }, [products])
 
   // Ordre des catégories pour l'affichage
   const categoryOrder = useMemo(() => ['bijoux-accessoires', 'decoration-maison', 'objets-art', 'accessoires-quotidiens'], [])
@@ -1195,41 +1259,67 @@ export default function App() {
           ) : (
             <div className="space-y-12">
               {selectedCategory === 'all' ? (
-                // Afficher toutes les catégories groupées
-                categoryOrder.map(category => {
-                  const categoryProducts = productsByCategory[category] || []
-                  if (categoryProducts.length === 0) return null
+                // Afficher toutes les catégories groupées (en utilisant filteredProducts pour respecter la recherche)
+                (() => {
+                  // Grouper les produits filtrés par catégorie
+                  const filteredByCategory = filteredProducts.reduce((acc, product) => {
+                    const category = product.category || 'other'
+                    if (!acc[category]) {
+                      acc[category] = []
+                    }
+                    acc[category].push(product)
+                    return acc
+                  }, {})
                   
-                  return (
-                    <div key={category} className="space-y-6">
-                      <div className="flex items-center justify-between border-b-2 border-gradient-to-r from-pink-200 to-purple-200 pb-4 mb-6">
-                        <div className="flex items-center gap-4">
-                          <h3 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                            {getCategoryDisplayName(category)}
-                          </h3>
-                          <Badge variant="outline" className="text-sm font-semibold border-pink-300 text-pink-600">
-                            {categoryProducts.length} {categoryProducts.length === 1 ? (language === 'fr' ? 'produit' : 'product') : (language === 'fr' ? 'produits' : 'products')}
-                          </Badge>
+                  // Obtenir toutes les catégories uniques des produits filtrés
+                  const allCategories = Object.keys(filteredByCategory)
+                  
+                  // Trier : d'abord les catégories dans categoryOrder, puis les autres
+                  const sortedCategories = [
+                    ...categoryOrder.filter(cat => filteredByCategory[cat] && filteredByCategory[cat].length > 0),
+                    ...allCategories.filter(cat => !categoryOrder.includes(cat) && filteredByCategory[cat] && filteredByCategory[cat].length > 0)
+                  ]
+                  
+                  if (sortedCategories.length === 0) {
+                    // Si aucune catégorie après filtrage, afficher un message
+                    return null
+                  }
+                  
+                  return sortedCategories.map(category => {
+                    const categoryProducts = filteredByCategory[category] || []
+                    if (categoryProducts.length === 0) return null
+                    
+                    return (
+                      <div key={category} className="space-y-6">
+                        <div className="flex items-center justify-between border-b-2 border-gradient-to-r from-pink-200 to-purple-200 pb-4 mb-6">
+                          <div className="flex items-center gap-4">
+                            <h3 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                              {getCategoryDisplayName(category)}
+                            </h3>
+                            <Badge variant="outline" className="text-sm font-semibold border-pink-300 text-pink-600">
+                              {categoryProducts.length} {categoryProducts.length === 1 ? (language === 'fr' ? 'produit' : 'product') : (language === 'fr' ? 'produits' : 'products')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                          {categoryProducts.map(product => (
+                            <ProductCard 
+                              key={product._id} 
+                              product={product} 
+                              onAddToCart={addToCart} 
+                              onCustomize={handleCustomize} 
+                              onToggleFavorite={toggleFavorite} 
+                              isFavorite={isFavorite(product._id)} 
+                              onViewDetails={handleViewDetails}
+                              language={language} 
+                              t={t} 
+                            />
+                          ))}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {categoryProducts.map(product => (
-                          <ProductCard 
-                            key={product._id} 
-                            product={product} 
-                            onAddToCart={addToCart} 
-                            onCustomize={handleCustomize} 
-                            onToggleFavorite={toggleFavorite} 
-                            isFavorite={isFavorite(product._id)} 
-                            onViewDetails={handleViewDetails}
-                            language={language} 
-                            t={t} 
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })
+                    )
+                  })
+                })()
               ) : (
                 // Afficher seulement la catégorie sélectionnée
                 <div className="space-y-6">
@@ -3208,6 +3298,85 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Modal Code Promo après Abonnement */}
+      <Dialog open={promoCodeModalOpen} onOpenChange={setPromoCodeModalOpen}>
+        <DialogContent className="max-w-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-pink-600 text-white border-0">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/30 rounded-full animate-ping"></div>
+                <div className="relative w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border-4 border-white/50">
+                  <Sparkles className="w-10 h-10 text-white animate-pulse" />
+                </div>
+              </div>
+            </div>
+            <DialogTitle className="text-3xl md:text-4xl font-black text-center text-white mb-2">
+              {language === 'fr' ? '🎉 Félicitations !' : '🎉 Congratulations!'}
+            </DialogTitle>
+            <DialogDescription className="text-center text-white/90 text-lg">
+              {language === 'fr' 
+                ? 'Votre code promo exclusif de 10% de réduction !' 
+                : 'Your exclusive 10% discount promo code!'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-6 space-y-6">
+            {/* Code Promo en grand */}
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-8 border-4 border-white/30 text-center">
+              <p className="text-white/90 text-sm md:text-base font-semibold mb-3">
+                {language === 'fr' ? 'Votre code promo :' : 'Your promo code:'}
+              </p>
+              <div className="bg-white rounded-xl p-4 mb-3">
+                <p className="text-3xl md:text-4xl font-black text-pink-600 tracking-wider">
+                  {receivedPromoCode}
+                </p>
+              </div>
+              <p className="text-white/80 text-xs md:text-sm">
+                {language === 'fr' 
+                  ? 'Valable 90 jours - Utilisable une seule fois' 
+                  : 'Valid for 90 days - One-time use'}
+              </p>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-white/90 text-sm md:text-base text-center">
+                {language === 'fr' 
+                  ? '✨ Utilisez ce code lors de votre prochaine commande pour obtenir 10% de réduction ! ✨' 
+                  : '✨ Use this code on your next order to get 10% off! ✨'}
+              </p>
+            </div>
+
+            {/* Boutons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(receivedPromoCode)
+                  toast({
+                    title: language === 'fr' ? '✅ Code copié !' : '✅ Code copied!',
+                    description: language === 'fr' 
+                      ? 'Le code promo a été copié dans votre presse-papiers' 
+                      : 'Promo code copied to clipboard'
+                  })
+                }}
+                className="flex-1 bg-white text-pink-600 hover:bg-white/90 font-bold text-lg py-6"
+              >
+                📋 {language === 'fr' ? 'Copier le Code' : 'Copy Code'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setPromoCodeModalOpen(false)
+                  setCurrentPage('products')
+                }}
+                className="flex-1 bg-white/20 hover:bg-white/30 border-2 border-white text-white font-bold text-lg py-6"
+              >
+                🛍️ {language === 'fr' ? 'Voir les Produits' : 'View Products'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

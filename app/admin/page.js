@@ -98,6 +98,33 @@ export default function AdminPage() {
     meta_description_en: ''
   })
 
+  // Vérifier la session au chargement de la page
+  useEffect(() => {
+    const checkSession = () => {
+      try {
+        const sessionData = localStorage.getItem('admin_session')
+        if (sessionData) {
+          const session = JSON.parse(sessionData)
+          const now = Date.now()
+          // Session valide pendant 24 heures
+          const sessionDuration = 24 * 60 * 60 * 1000 // 24 heures en millisecondes
+          
+          if (session.timestamp && (now - session.timestamp) < sessionDuration) {
+            setIsLoggedIn(true)
+          } else {
+            // Session expirée, nettoyer
+            localStorage.removeItem('admin_session')
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de la session:', error)
+        localStorage.removeItem('admin_session')
+      }
+    }
+    
+    checkSession()
+  }, [])
+
   useEffect(() => {
     if (isLoggedIn) {
       loadDashboardData()
@@ -134,6 +161,15 @@ export default function AdminPage() {
       const data = await res.json()
       
       if (data.success && data.admin) {
+        // Sauvegarder la session dans localStorage
+        const sessionData = {
+          email: data.admin.email,
+          name: data.admin.name,
+          id: data.admin.id,
+          timestamp: Date.now()
+        }
+        localStorage.setItem('admin_session', JSON.stringify(sessionData))
+        
         setIsLoggedIn(true)
         toast({ title: '✅ Connecté', description: `Bienvenue ${data.admin.name || 'Admin'}` })
       } else {
@@ -454,7 +490,11 @@ export default function AdminPage() {
 
           <div className="mt-8 mb-4">
             <button
-              onClick={() => setIsLoggedIn(false)}
+              onClick={() => {
+                localStorage.removeItem('admin_session')
+                setIsLoggedIn(false)
+                toast({ title: '✅ Déconnecté', description: 'Vous avez été déconnecté avec succès' })
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition"
             >
               <LogOut className="w-5 h-5" />
