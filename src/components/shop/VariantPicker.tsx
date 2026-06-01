@@ -6,7 +6,7 @@ import {
   Minus, Check, ChevronRight,
   AlertCircle, Heart,
 } from 'lucide-react'
-import { formatPrice } from '@/lib/utils'
+import { useCurrency } from '@/contexts/CurrencyContext'
 
 const COLOR_HEX: Record<string, string> = {
   'Rouge': '#EF4444', 'Red': '#EF4444',
@@ -48,6 +48,7 @@ export default function VariantPicker({
   onClose,
   onAddToCart,
 }: VariantPickerProps) {
+  const { formatLocalPrice } = useCurrency()
 
   const colors: string[] =
     product?.colors ||
@@ -260,14 +261,14 @@ export default function VariantPicker({
                     gap-2 mt-1.5">
                     <span className="text-xl
                       font-black text-primary">
-                      {formatPrice(product?.price)}
+                      {formatLocalPrice(product?.price)}
                     </span>
                     {product?.compare_price >
                       product?.price && (
                       <span className="text-sm
                         text-gray-400
                         line-through">
-                        {formatPrice(
+                        {formatLocalPrice(
                           product?.compare_price
                         )}
                       </span>
@@ -636,7 +637,7 @@ export default function VariantPicker({
                   Total:{' '}
                   <span className="font-black
                     text-gray-900">
-                    {formatPrice(
+                    {formatLocalPrice(
                       product?.price * quantity
                     )}
                   </span>

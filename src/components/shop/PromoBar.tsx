@@ -7,7 +7,7 @@ export default function PromoBar() {
   const threshold = getSetting('free_shipping_threshold', 100)
 
   const promos = [
-    { icon: Truck, text: `🚚 Livraison GRATUITE dès ${threshold}$` },
+    { icon: Truck, text: `🚚 Livraison GRATUITE partout` },
     { icon: Tag, text: '🏷️ Jusqu\'à -60% sur les promos' },
     { icon: RotateCcw, text: '↩️ Retours gratuits 30 jours' },
     { icon: Zap, text: '⚡ Nouveaux produits chaque semaine' },

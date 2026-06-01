@@ -201,7 +201,7 @@ export default function HomePage() {
 
         {/* ── TOP BANNER (compact) ── */}
         <div className="bg-gradient-to-r from-primary to-orange-500 text-white text-center py-2 px-4 text-xs font-bold hidden sm:block">
-          🚚 Livraison gratuite dès {getSetting('free_shipping_threshold', 100)}$ · 🔒 Paiement sécurisé · ↩️ Retour 30 jours
+          🚚 Livraison gratuite sur tout · 🔒 Paiement sécurisé · ↩️ Retour 30 jours
         </div>
 
         {/* ── HERO SECTION ── */}
@@ -233,7 +233,7 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-4 mt-6 flex-wrap justify-center md:justify-start">
                 {[
-                  '🚚 Livraison gratuite +100$',
+                  '🚚 Livraison gratuite',
                   '🔒 Paiement sécurisé',
                   '↩️ Retour 30 jours',
                   '⭐ 4.8/5 satisfaction',

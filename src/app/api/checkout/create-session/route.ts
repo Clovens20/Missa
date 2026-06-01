@@ -64,9 +64,9 @@ export async function POST(req: Request) {
     let expressShippingFee = 9.99
 
     siteSettingsRes?.forEach(row => {
-      if (row.key === 'free_shipping_threshold') freeShippingThreshold = Number(row.value) || 100
-      if (row.key === 'shipping_fee_standard') standardShippingFee = Number(row.value) || 8.99
-      if (row.key === 'shipping_fee_express') expressShippingFee = Number(row.value) || 9.99
+      if (row.key === 'free_shipping_threshold') freeShippingThreshold = row.value != null ? Number(row.value) : 100
+      if (row.key === 'shipping_fee_standard') standardShippingFee = row.value != null ? Number(row.value) : 8.99
+      if (row.key === 'shipping_fee_express') expressShippingFee = row.value != null ? Number(row.value) : 9.99
     })
 
     // Calculate subtotal, shipping, and tax matching local calculations

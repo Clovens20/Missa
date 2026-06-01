@@ -10,6 +10,7 @@ import {
 import { formatPrice } from '@/lib/utils'
 import VariantPicker from './VariantPicker'
 import { useCart } from '@/contexts/CartContext'
+import { useCurrency } from '@/contexts/CurrencyContext'
 import { toast } from 'sonner'
 import ProductQuickView from './ProductQuickView'
 
@@ -40,6 +41,7 @@ export default function ProductCard({
   index?: number
 }) {
   const { addItem } = useCart()
+  const { formatLocalPrice } = useCurrency()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   
@@ -492,13 +494,13 @@ export default function ProductCard({
 
             <div className="flex items-baseline gap-2">
               <span className="text-sm sm:text-base font-black text-primary mt-1">
-                {formatPrice(product.price)}
+                {formatLocalPrice(product.price)}
               </span>
               {hasDiscount && (
                 <span className="text-sm
                   text-gray-400
                   line-through">
-                  {formatPrice(
+                  {formatLocalPrice(
                     product.compare_price || 0
                   )}
                 </span>

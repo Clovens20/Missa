@@ -16,7 +16,7 @@ export async function GET() {
     const { data: orders } = await supabase
       .from('dropship_orders')
       .select('*')
-      .in('status', ['submitted', 'processing'])
+      .in('status', ['submitted', 'processing', 'shipped'])
 
     let updated = 0
     const errors: string[] = []
@@ -43,7 +43,7 @@ export async function GET() {
           newStatus = 'processing'
         } else if (cjOrderStatus === 'SHIPPED') {
           newStatus = 'shipped'
-          tracking = cjStatus.trackingNumber || tracking
+          tracking = cjStatus.trackNumber || cjStatus.trackingNumber || tracking
           trackingUrl = cjStatus.trackingUrl || trackingUrl
         } else if (cjOrderStatus === 'DELIVERED') {
           newStatus = 'delivered'
@@ -64,6 +64,15 @@ export async function GET() {
               updated_at: new Date().toISOString(),
             })
             .eq('id', order.id)
+
+          // Sync the main guest_order status
+          await supabase
+            .from('guest_orders')
+            .update({
+              order_status: newStatus,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', order.guest_order_id)
 
           // If shipped, send email to customer
           if (newStatus === 'shipped' && order.status !== 'shipped' && tracking) {

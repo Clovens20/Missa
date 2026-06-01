@@ -11,6 +11,7 @@ import { formatPrice, calculateDiscount } from '@/lib/utils'
 import type { Product, Review, ProductVariant } from '@/types'
 import { toast } from 'sonner'
 import { useCountry } from '@/contexts/CountryContext'
+import { useCurrency } from '@/contexts/CurrencyContext'
 import { isProductAvailable } from '@/lib/geo-detect'
 import { 
   UrgencyBlock,
@@ -39,6 +40,7 @@ export default function ProductDetailClient({
   const { addItem, setGuestEmail } = useCart()
   const { toggle, isInWishlist } = useWishlist()
   const { country: visitorCountry } = useCountry()
+  const { formatLocalPrice } = useCurrency()
   
   const [mainImg, setMainImg] = useState(0)
   const [quantity, setQuantity] = useState(1)
@@ -235,16 +237,16 @@ export default function ProductDetailClient({
 
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-black text-primary">
-                  {formatPrice(unitPrice)}
+                  {formatLocalPrice(unitPrice)}
                 </span>
                 {currentDiscount > 0 ? (
                   <span className="text-xl text-gray-400 line-through decoration-red-500/30">
-                    {formatPrice(product.price)}
+                    {formatLocalPrice(product.price)}
                   </span>
                 ) : (
                   product.compare_price && product.compare_price > product.price && (
                     <span className="text-xl text-gray-400 line-through decoration-red-500/30">
-                      {formatPrice(product.compare_price)}
+                      {formatLocalPrice(product.compare_price)}
                     </span>
                   )
                 )}
@@ -307,7 +309,7 @@ export default function ProductDetailClient({
                           </span>
                         </div>
                         <span className="font-black text-gray-900">
-                          {formatPrice((product.price * (1 - offer.discount / 100)) * offer.qty)}
+                          {formatLocalPrice((product.price * (1 - offer.discount / 100)) * offer.qty)}
                         </span>
                       </button>
                     )

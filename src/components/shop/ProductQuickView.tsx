@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { X, Heart, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { formatPrice } from '@/lib/utils'
+import { useCurrency } from '@/contexts/CurrencyContext'
 import { getColorHex } from '@/lib/colors'
 
 interface Variant {
@@ -45,6 +45,7 @@ export default function ProductQuickView({
   const [quantity, setQuantity] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const { formatLocalPrice } = useCurrency()
 
   // Reset state when product changes
   useEffect(() => {
@@ -211,7 +212,7 @@ export default function ProductQuickView({
                   <div>
                     <h2 className="text-white font-black text-xl leading-tight mb-1">{product.name}</h2>
                     <p className="text-3xl font-black text-primary">
-                      {formatPrice(currentPrice)}
+                      {formatLocalPrice(currentPrice)}
                       <span className="text-sm font-normal text-gray-500 ml-1">HT</span>
                     </p>
                   </div>

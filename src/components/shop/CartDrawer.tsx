@@ -64,10 +64,10 @@ export default function CartDrawer() {
     }
   }
 
-  const FREE_SHIPPING_THRESHOLD = getSetting('free_shipping_threshold', 100)
+  const FREE_SHIPPING_THRESHOLD = 0
 
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - total)
-  const progress = Math.min(100, (total / FREE_SHIPPING_THRESHOLD) * 100)
+  const remaining = 0
+  const progress = 100
 
   return (
     <>
@@ -110,25 +110,10 @@ export default function CartDrawer() {
             </div>
 
             {/* Free shipping bar */}
-            <div className="px-5 py-3 bg-orange-50 border-b border-orange-100">
-              {remaining > 0 ? (
-                <>
-                  <p className="text-xs text-orange-700 mb-1.5">
-                    🚚 Plus que <strong>{formatLocalPrice(remaining)}</strong> pour la livraison gratuite!
-                  </p>
-                  <div className="h-2 bg-orange-200 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      className="h-full bg-primary rounded-full"
-                    />
-                  </div>
-                </>
-              ) : (
-                <p className="text-xs text-secondary font-bold">
-                  ✅ Livraison gratuite appliquée!
+            <div className="px-5 py-3 bg-secondary/10 border-b border-secondary/20">
+                <p className="text-xs text-secondary font-bold flex items-center gap-1.5 justify-center">
+                  ✅ Livraison gratuite sur toute la boutique !
                 </p>
-              )}
             </div>
 
             {/* Items */}

@@ -19,7 +19,7 @@ export default function PolitiqueExpedition() {
           </div>
 
           <div style={{ background: "#fdf8f2", border: "1px solid #e8d5b0", borderRadius: 8, padding: "20px 24px", marginBottom: 48, fontSize: 15 }}>
-            🚚 <strong>Livraison gratuite</strong> sur toutes les commandes de <strong>{threshold}$ CAD et plus</strong>. Nous livrons dans le monde entier !
+            🚚 <strong>Livraison gratuite</strong> sur toutes les commandes. Nous livrons dans le monde entier !
           </div>
 
           <Section title="1. Traitement des commandes">

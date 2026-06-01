@@ -71,6 +71,17 @@ export default function OrdersPage() {
     setLoading(false); setRefreshing(false)
   }
 
+  async function handleRefreshClick() {
+    setRefreshing(true)
+    try {
+      // Synchronisation avec CJ Dropshipping avant de charger
+      await fetch('/api/cj/tracking')
+    } catch (e) {
+      console.error('Erreur lors de la synchronisation CJ', e)
+    }
+    await loadOrders()
+  }
+
   useEffect(() => { if ('Notification' in window && Notification.permission === 'default') { Notification.requestPermission() } }, [])
 
   const filtered = orders.filter(o => {
@@ -83,7 +94,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between"><h1 className="text-2xl font-black text-white">🛒 Commandes</h1><button onClick={loadOrders} disabled={refreshing} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"><RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}/>Actualiser</button></div>
+      <div className="flex items-center justify-between"><h1 className="text-2xl font-black text-white">🛒 Commandes</h1><button onClick={handleRefreshClick} disabled={refreshing} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"><RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}/>Actualiser</button></div>
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         <button onClick={() => setStatusFilter('all')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${statusFilter === 'all' ? 'bg-white text-gray-900' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>Toutes<span className="bg-gray-700 text-white text-xs px-1.5 rounded-full">{orders.length}</span></button>
         {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (<button key={key} onClick={() => setStatusFilter(key)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${statusFilter === key ? `${cfg.bg} ${cfg.color} border ${cfg.border}` : 'bg-gray-800 text-gray-400 hover:text-white'}`}><cfg.icon className="w-3.5 h-3.5"/>{cfg.label}{statusCounts[key] > 0 && <span className={`text-xs px-1.5 rounded-full ${statusFilter === key ? 'bg-white/20' : 'bg-gray-700'}`}>{statusCounts[key]}</span>}</button>))}
